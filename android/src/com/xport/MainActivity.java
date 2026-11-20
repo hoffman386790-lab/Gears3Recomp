@@ -1,5 +1,11 @@
 package com.xport;
 
+
+import android.os.Build;
+import android.os.CombinedVibration;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -546,6 +552,48 @@ public class MainActivity extends Activity {
 
     // The first connected pad's name, or "" without one. A pad has sticks: the Redmi Note 11's
     // fingerprint reader (uinput-goodix) says it is a keyboard and a gamepad, without a joystick.
+    
+    public static void setGamepadRumble(int leftMotor, int rightMotor) {
+        int leftAmp = Math.min(255, (leftMotor * 255) / 65535);
+        int rightAmp = Math.min(255, (rightMotor * 255) / 65535);
+        int maxAmp = Math.max(leftAmp, rightAmp);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            for (int id : InputDevice.getDeviceIds()) {
+                InputDevice device = InputDevice.getDevice(id);
+                if (device == null || device.isVirtual()) continue;
+                int sources = device.getSources();
+                if ((sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+                    (sources & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+                    VibratorManager vm = device.getVibratorManager();
+                    if (vm != null && vm.getVibratorIds().length > 0) {
+                        if (maxAmp == 0) {
+                            vm.cancel();
+                        } else {
+                            VibrationEffect effect = VibrationEffect.createOneShot(150, maxAmp);
+                            vm.vibrate(CombinedVibration.createParallel(effect));
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
+        MainActivity activity = instance;
+        if (activity != null) {
+            Vibrator v = (Vibrator) activity.getSystemService(VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                if (maxAmp == 0) {
+                    v.cancel();
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v.vibrate(VibrationEffect.createOneShot(150, maxAmp));
+                } else {
+                    v.vibrate(150);
+                }
+            }
+        }
+    }
+
     private static String connectedGamepad() {
         for (int id : InputDevice.getDeviceIds()) {
             InputDevice device = InputDevice.getDevice(id);
