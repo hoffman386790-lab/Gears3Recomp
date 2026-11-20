@@ -1,6 +1,5 @@
 #ifdef __ANDROID__
 #include <jni.h>
-extern JavaVM* g_vm;
 #endif
 #include <stdafx.h>
 #include "xam.h"
@@ -687,7 +686,9 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
         return ERROR_DEVICE_NOT_CONNECTED;
 
 #ifdef __ANDROID__
-    if (vibration != nullptr && g_vm != nullptr) {
+    JavaVM* g_vm = nullptr;
+    jsize vm_count = 0;
+    if (vibration != nullptr && JNI_GetCreatedJavaVMs(&g_vm, 1, &vm_count) == JNI_OK && vm_count > 0 && g_vm != nullptr) {
         uint16_t left = ByteSwap(vibration->wLeftMotorSpeed);
         uint16_t right = ByteSwap(vibration->wRightMotorSpeed);
 
