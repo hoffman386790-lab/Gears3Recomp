@@ -128,7 +128,7 @@ jobs:
           CMAKE_BUILD_PARALLEL_LEVEL: "4"
         run: |
           export PATH="$ANDROID_HOME/cmake/3.31.6/bin:$PATH"
-          ./tools/build-android.sh port xportapp
+          ./tools/build-android.sh xport xportapp
 
       - name: Package and sign APK
         env:
@@ -140,10 +140,10 @@ jobs:
             -storepass android -alias androiddebugkey -keypass android \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
-          ./tools/build-apk.sh port
+          ./tools/build-apk.sh
 
       - name: Upload Optimized Gears 3 APK
         uses: actions/upload-artifact@v4
         with:
           name: GearsOfWar3-POCO-F6-Optimized
-          path: build/*.apk
+          path: build/**/*.apk
