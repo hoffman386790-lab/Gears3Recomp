@@ -71,6 +71,8 @@ jobs:
           cmake --build build-xenonrecomp -j $(nproc)
           cp build-xenonrecomp/XenonRecomp/XenonRecomp bin/XenonRecomp.exe
           cp build-xenonrecomp/XenonAnalyse/XenonAnalyse bin/XenonAnalyse.exe
+          STATIC_LIBS=$(find build-xenonrecomp -name "*.a")
+          clang++ -O2 -std=c++20 -Ithird_party/XenonRecomp/XenonUtils -Ithird_party/XenonRecomp/third_party/disasm -Ithird_party/XenonRecomp/third_party/fmt/include tools/xexinfo/xexinfo.cpp -Wl,--start-group $STATIC_LIBS -Wl,--end-group -o bin/xexinfo.exe
           chmod +x bin/*.exe
 
       - name: Recompile XEX via xport.py and generate shader cache stubs
