@@ -40,6 +40,8 @@ jobs:
           sudo apt-get update && sudo apt-get install -y --no-install-recommends \
             ninja-build clang lld unzip curl zstd python3 python3-pip wine wine32:i386
           pip3 install --break-system-packages gdown capstone pefile || pip3 install gdown capstone pefile
+          printf '#!/usr/bin/env bash\n[ "$1" = "-3" ] && shift\nexec python3 "$@"\n' | sudo tee /usr/local/bin/py >/dev/null
+          sudo chmod +x /usr/local/bin/py
 
       - name: Download default.xex from secret
         env:
@@ -71,46 +73,43 @@ jobs:
           cp build-xenonrecomp/XenonAnalyse/XenonAnalyse bin/XenonAnalyse.exe
           chmod +x bin/*.exe
 
-      - name: Generate PPC code and shader cache stubs via port.py
+      - name: Recompile XEX via xport.py and generate shader cache stubs
         run: |
-          python3 tools/port.py work_xex/default.xex work_port gears_of_war_3 --no-build || true
-          mkdir -p games/gears_of_war_3/data/shader
-          if [ ! -f games/gears_of_war_3/data/shader/shader_cache.cpp ]; then
-            zstd -c < /dev/null > empty.zst
-            python3 - << 'PYEOF'
-            zst = open("empty.zst", "rb").read()
-            arr = ", ".join(f"0x{b:02x}" for b in zst)
-            with open("games/gears_of_war_3/data/shader/shader_cache.h", "w") as f:
-                f.write(f"""#pragma once
-            #include <cstdint>
-            #include <cstddef>
-            #include <array>
-            #include <string_view>
-            struct FilenameBuf {{
-                std::array<char, 256> buf{{}};
-                constexpr FilenameBuf() = default;
-                constexpr FilenameBuf(std::nullptr_t) {{}}
-                constexpr FilenameBuf(const char*) {{}}
-                operator char*() {{ return buf.data(); }}
-                operator const char*() const {{ return buf.data(); }}
-            }};
-            inline std::string_view format_as(const FilenameBuf& f) {{ return f.buf.data(); }}
-            struct ShaderCacheEntry {{
-                uint64_t hash; uint32_t f1; uint32_t spirvOffset; uint32_t spirvSize;
-                uint32_t lateSpirvOffset; uint32_t lateSpirvSize; uint32_t usedTextureMask;
-                uint32_t f7; uint32_t f8; uint32_t specConstantsMask; uint32_t f10;
-                FilenameBuf filename; uint32_t f12;
-            }};
-            inline constexpr uint8_t g_compressedSpirvCache[] = {{ {arr} }};
-            inline constexpr size_t g_spirvCacheCompressedSize = {len(zst)};
-            inline constexpr size_t g_spirvCacheDecompressedSize = 0;
-            inline constexpr ShaderCacheEntry g_shaderCacheEntries[] = {{}};
-            inline constexpr size_t g_shaderCacheEntryCount = 0;
-            """)
-            with open("games/gears_of_war_3/data/shader/shader_cache.cpp", "w") as f:
-                f.write('#include "shader_cache.h"\n')
-            PYEOF
-          fi
+          python3 -I tools/xport.py work_xex/default.xex work_port
+          mkdir -p games/gears_of_war_3/ppc games/gears_of_war_3/data/shader
+          cp -r work_port/ppc/* games/gears_of_war_3/ppc/
+          zstd -c < /dev/null > empty.zst
+          python3 -c '
+          zst = open("empty.zst", "rb").read()
+          arr = ", ".join(f"0x{b:02x}" for b in zst)
+          open("games/gears_of_war_3/data/shader/shader_cache.h", "w").write(f"""#pragma once
+          #include <cstdint>
+          #include <cstddef>
+          #include <array>
+          #include <string_view>
+          struct FilenameBuf {{
+              std::array<char, 256> buf{{}};
+              constexpr FilenameBuf() = default;
+              constexpr FilenameBuf(std::nullptr_t) {{}}
+              constexpr FilenameBuf(const char*) {{}}
+              operator char*() {{ return buf.data(); }}
+              operator const char*() const {{ return buf.data(); }}
+          }};
+          inline std::string_view format_as(const FilenameBuf& f) {{ return f.buf.data(); }}
+          struct ShaderCacheEntry {{
+              uint64_t hash; uint32_t f1; uint32_t spirvOffset; uint32_t spirvSize;
+              uint32_t lateSpirvOffset; uint32_t lateSpirvSize; uint32_t usedTextureMask;
+              uint32_t f7; uint32_t f8; uint32_t specConstantsMask; uint32_t f10;
+              FilenameBuf filename; uint32_t f12;
+          }};
+          inline constexpr uint8_t g_compressedSpirvCache[] = {{ {arr} }};
+          inline constexpr size_t g_spirvCacheCompressedSize = {len(zst)};
+          inline constexpr size_t g_spirvCacheDecompressedSize = 0;
+          inline constexpr ShaderCacheEntry g_shaderCacheEntries[] = {{}};
+          inline constexpr size_t g_shaderCacheEntryCount = 0;
+          """)
+          open("games/gears_of_war_3/data/shader/shader_cache.cpp", "w").write("#include \"shader_cache.h\"\n")
+          '
 
       - name: Adapt build scripts for Linux runner
         run: |
