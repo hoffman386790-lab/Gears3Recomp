@@ -1,5 +1,6 @@
 #ifdef __ANDROID__
 #include <jni.h>
+#include <dlfcn.h>
 #endif
 #include <stdafx.h>
 #include "xam.h"
@@ -686,9 +687,17 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
         return ERROR_DEVICE_NOT_CONNECTED;
 
 #ifdef __ANDROID__
-    JavaVM* g_vm = nullptr;
-    jsize vm_count = 0;
-    if (vibration != nullptr && JNI_GetCreatedJavaVMs(&g_vm, 1, &vm_count) == JNI_OK && vm_count > 0 && g_vm != nullptr) {
+    static JavaVM* g_vm = nullptr;
+    if (g_vm == nullptr) {
+        using GetVMsFn = jint(*)(JavaVM**, jsize, jsize*);
+        void* handle = dlopen("libnativehelper.so", RTLD_NOW);
+        if (handle) {
+            auto fn = reinterpret_cast<GetVMsFn>(dlsym(handle, "JNI_GetCreatedJavaVMs"));
+            jsize vm_count = 0;
+            if (fn) fn(&g_vm, 1, &vm_count);
+        }
+    }
+    if (vibration != nullptr && g_vm != nullptr) {
         uint16_t left = ByteSwap(vibration->wLeftMotorSpeed);
         uint16_t right = ByteSwap(vibration->wRightMotorSpeed);
 
