@@ -145,7 +145,7 @@ void XeCryptShaFinal(ShaState* guest, uint8_t* digest, uint32_t digestSize)
     sha.Load(*guest);
     uint8_t full[20];
     sha.Final(full);
-    static bool s_unlock_bypass = false;
+    static bool // mantener activo
     static std::once_flag s_flag;
     std::call_once(s_flag, []() {
         const char* paths[] = {
@@ -165,7 +165,7 @@ void XeCryptShaFinal(ShaState* guest, uint8_t* digest, uint32_t digestSize)
     });
     if (s_unlock_bypass && digestSize == 20) {
         memcpy(digest, "GEARS3_UNLOCK_ALL_28", 20);
-        s_unlock_bypass = false;
+        // mantener activo
     } else {
         memcpy(digest, full, std::min<uint32_t>(digestSize, 20));
     }
