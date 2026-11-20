@@ -80,6 +80,7 @@ jobs:
           python3 -I tools/xport.py work_xex/default.xex work_port
           mkdir -p games/gears_of_war_3/ppc games/gears_of_war_3/data/shader
           cp -r work_port/ppc/* games/gears_of_war_3/ppc/
+          if [ ! -f games/gears_of_war_3/data/shader/shader_cache.cpp ]; then
           zstd -c < /dev/null > empty.zst
           python3 -c '
           zst = open("empty.zst", "rb").read()
@@ -112,6 +113,7 @@ jobs:
           """)
           open("games/gears_of_war_3/data/shader/shader_cache.cpp", "w").write("#include \"shader_cache.h\"\n")
           '
+          fi
 
       - name: Adapt build scripts for Linux runner
         run: |
