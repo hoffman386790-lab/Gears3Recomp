@@ -1,6 +1,17 @@
 #ifdef __ANDROID__
 #include <jni.h>
 #include <dlfcn.h>
+static jclass g_mainActivityCls = nullptr;
+static jmethodID g_rumbleMid = nullptr;
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_xport_MainActivity_nativeInitRumble(JNIEnv* env, jclass clazz)
+{
+    if (g_mainActivityCls == nullptr && clazz != nullptr) {
+        g_mainActivityCls = (jclass)env->NewGlobalRef(clazz);
+        g_rumbleMid = env->GetStaticMethodID(g_mainActivityCls, "setGamepadRumble", "(II)V");
+    }
+}
 #endif
 #include <stdafx.h>
 #include "xam.h"
@@ -687,57 +698,33 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
         return ERROR_DEVICE_NOT_CONNECTED;
 
 #ifdef __ANDROID__
-    static JavaVM* g_vm = nullptr;
-    if (g_vm == nullptr) {
-        using GetVMsFn = jint(*)(JavaVM**, jsize, jsize*);
-        void* handle = dlopen("libnativehelper.so", RTLD_NOW);
-        if (handle) {
-            auto fn = reinterpret_cast<GetVMsFn>(dlsym(handle, "JNI_GetCreatedJavaVMs"));
-            jsize vm_count = 0;
-            if (fn) fn(&g_vm, 1, &vm_count);
-        }
-    }
-    if (vibration != nullptr && g_vm != nullptr) {
+    if (vibration != nullptr && g_mainActivityCls != nullptr && g_rumbleMid != nullptr) {
         uint16_t left = ByteSwap(vibration->wLeftMotorSpeed);
         uint16_t right = ByteSwap(vibration->wRightMotorSpeed);
 
-        JNIEnv* env = nullptr;
-        bool attached = false;
-        jint res = g_vm->GetEnv((void**)&env, JNI_VERSION_1_6);
-        if (res == JNI_EDETACHED) {
-            if (g_vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
-                attached = true;
+        static JavaVM* g_vm = nullptr;
+        if (g_vm == nullptr) {
+            using GetVMsFn = jint(*)(JavaVM**, jsize, jsize*);
+            void* handle = dlopen("libnativehelper.so", RTLD_NOW);
+            if (handle) {
+                auto fn = reinterpret_cast<GetVMsFn>(dlsym(handle, "JNI_GetCreatedJavaVMs"));
+                jsize vm_count = 0;
+                if (fn) fn(&g_vm, 1, &vm_count);
             }
         }
 
-        if (env != nullptr) {
-            jclass threadCls = env->FindClass("java/lang/Thread");
-            jmethodID currentThreadMid = env->GetStaticMethodID(threadCls, "currentThread", "()Ljava/lang/Thread;");
-            jobject threadObj = env->CallStaticObjectMethod(threadCls, currentThreadMid);
-            jmethodID getLoaderMid = env->GetMethodID(threadCls, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
-            jobject classLoader = env->CallObjectMethod(threadObj, getLoaderMid);
-
-            jclass loaderCls = env->FindClass("java/lang/ClassLoader");
-            jmethodID loadClassMid = env->GetMethodID(loaderCls, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
-
-            if (classLoader != nullptr && loadClassMid != nullptr) {
-                jstring clsName = env->NewStringUTF("com.xport.MainActivity");
-                jclass cls = (jclass)env->CallObjectMethod(classLoader, loadClassMid, clsName);
-                env->DeleteLocalRef(clsName);
-
-                if (cls != nullptr && !env->ExceptionCheck()) {
-                    jmethodID mid = env->GetStaticMethodID(cls, "setGamepadRumble", "(II)V");
-                    if (mid != nullptr) {
-                        env->CallStaticVoidMethod(cls, mid, (jint)left, (jint)right);
-                    }
-                    env->DeleteLocalRef(cls);
-                } else {
-                    env->ExceptionClear();
+        if (g_vm != nullptr) {
+            JNIEnv* env = nullptr;
+            bool attached = false;
+            if (g_vm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_EDETACHED) {
+                if (g_vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
+                    attached = true;
                 }
             }
-            if (env->ExceptionCheck()) env->ExceptionClear();
-            if (attached) {
-                g_vm->DetachCurrentThread();
+            if (env != nullptr) {
+                env->CallStaticVoidMethod(g_mainActivityCls, g_rumbleMid, (jint)left, (jint)right);
+                if (env->ExceptionCheck()) env->ExceptionClear();
+                if (attached) g_vm->DetachCurrentThread();
             }
         }
     }

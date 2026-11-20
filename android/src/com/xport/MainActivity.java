@@ -150,6 +150,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         instance = this;
+        try { nativeInitRumble(); } catch (Throwable ignored) {}
         loadGameLibrary();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         // Ask the display for its game mode: no picture post-processing (motion smoothing, image
@@ -553,6 +554,8 @@ public class MainActivity extends Activity {
     // The first connected pad's name, or "" without one. A pad has sticks: the Redmi Note 11's
     // fingerprint reader (uinput-goodix) says it is a keyboard and a gamepad, without a joystick.
     
+    private static native void nativeInitRumble();
+
     public static void setGamepadRumble(int leftMotor, int rightMotor) {
         int leftAmp = Math.min(255, (leftMotor * 255) / 65535);
         int rightAmp = Math.min(255, (rightMotor * 255) / 65535);
