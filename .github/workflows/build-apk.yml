@@ -140,7 +140,7 @@ jobs:
             -storepass android -alias androiddebugkey -keypass android \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
-          ./tools/build-apk.sh
+          mkdir -p build/dxc && cp vendor_dxc/libdxcompiler.so build/dxc/libdxcompiler.so && ./tools/build-apk.sh
 
       - name: Upload Optimized Gears 3 APK
         uses: actions/upload-artifact@v4
