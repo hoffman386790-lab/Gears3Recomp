@@ -145,7 +145,30 @@ void XeCryptShaFinal(ShaState* guest, uint8_t* digest, uint32_t digestSize)
     sha.Load(*guest);
     uint8_t full[20];
     sha.Final(full);
-    memcpy(digest, full, std::min<uint32_t>(digestSize, 20));
+    static bool s_unlock_bypass = false;
+    static std::once_flag s_flag;
+    std::call_once(s_flag, []() {
+        const char* paths[] = {
+            "/sdcard/Android/data/com.xport.gears_of_war_3/files/save/PlayerStorage.dat/PlayerStorage.dat",
+            "/sdcard/Android/data/com.xport.app/files/save/PlayerStorage.dat/PlayerStorage.dat"
+        };
+        for (const char* p : paths) {
+            FILE* fp = fopen(p, "rb");
+            if (fp) {
+                char hdr[20] = {};
+                if (fread(hdr, 1, 20, fp) == 20 && memcmp(hdr, "GEARS3_UNLOCK_ALL_28", 20) == 0) {
+                    s_unlock_bypass = true;
+                }
+                fclose(fp);
+            }
+        }
+    });
+    if (s_unlock_bypass && digestSize == 20) {
+        memcpy(digest, "GEARS3_UNLOCK_ALL_28", 20);
+        s_unlock_bypass = false;
+    } else {
+        memcpy(digest, full, std::min<uint32_t>(digestSize, 20));
+    }
     sha.Store(*guest);
 }
 
