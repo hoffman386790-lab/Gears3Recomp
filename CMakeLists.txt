@@ -53,7 +53,7 @@ elseif (ANDROID)
     # Dimensity 8300 (Cortex-A715 + A510): each atomic read-modify-write calls a __aarch64_ldadd*/
     # cas* helper that tests for LSE at run time. Tuned for the A715. Floating-point semantics are
     # the same either way.
-    add_compile_options(-march=armv8-a -moutline-atomics -mtune=cortex-a715)
+    add_compile_options(-O3 -march=armv8.2-a+lse+fp16+dotprod+simd -mtune=cortex-x4 -mno-outline-atomics -fomit-frame-pointer)
 endif()
 
 # Recompiled game code (XenonRecomp output). Regenerate with tools/recompile.bat.
@@ -62,7 +62,7 @@ file(GLOB XPORT_PPC_SOURCES CONFIGURE_DEPENDS ${XPORT_PPC_ROOT}/ppc_recomp.*.cpp
 add_library(xportppc STATIC ${XPORT_PPC_SOURCES} ${XPORT_PPC_ROOT}/ppc_func_mapping.cpp)
 # Same flags UnleashedRecomp uses for its recompiled library: the generated code type-puns
 # through PPCRegister and relies on strict IEEE behaviour.
-target_compile_options(xportppc PRIVATE -fno-strict-aliasing ${XPORT_FP_STRICT})
+target_compile_options(xportppc PRIVATE -O3 -fno-strict-aliasing ${XPORT_FP_STRICT})
 target_include_directories(xportppc PUBLIC ${XPORT_PPC_ROOT} ${XENON_THIRDPARTY}/simde)
 # guest_mmio.h first: it redefines PPC_MM_STORE_U32 to forward the APU register writes.
 target_precompile_headers(xportppc PRIVATE ${XPORT_RUNTIME_ROOT}/apu/guest_mmio.h ${XPORT_PPC_ROOT}/ppc_recomp_shared.h)
@@ -171,12 +171,12 @@ if (ANDROID)
     target_link_libraries(xportapp PRIVATE -Wl,--whole-archive rex_xd3dhooks -Wl,--no-whole-archive
         -Wl,--start-group ${REX_LIBRARIES} -Wl,--end-group)
     target_precompile_headers(xportapp PRIVATE ${XPORT_RUNTIME_ROOT}/stdafx.h)
-    target_compile_options(xportapp PRIVATE -g)
+    target_compile_options(xportapp PRIVATE -O3)
     # The recompiled functions are weak (PPC_WEAK_FUNC) and every function of a shared library can
     # be interposed by default, so ~28,700 of them, 22,840 guest functions among them, were called
     # through PLT stubs (GOT load + indirect branch on every guest call). Nothing interposes this
     # library: bind its function references to its own definitions so they become direct calls.
-    target_link_options(xportapp PRIVATE -Wl,-Bsymbolic-functions)
+    target_link_options(xportapp PRIVATE -Wl,-Bsymbolic-functions -Wl,--gc-sections -O3)
 endif()
 # Debug info for the runtime only (the recompiled library would be enormous): crash offsets
 # printed by runtime/os/crash.cpp are symbolized with llvm-symbolizer.

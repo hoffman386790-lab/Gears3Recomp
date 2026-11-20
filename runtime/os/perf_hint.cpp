@@ -116,7 +116,7 @@ namespace
             s_level = 1;
         if (s_level == 1 && forecast < 0.75f)
             s_level = 0;
-        static constexpr float kCeiling[] = { 1.0f, 0.85f, 0.7f };
+        static constexpr float kCeiling[] = { 1.0f, 1.0f, 0.9f };
         if (g_thermalCeiling.exchange(kCeiling[s_level], std::memory_order_relaxed) != kCeiling[s_level])
             LOGFN("adpf: thermal forecast {:.2f}, draw distance ceiling {:.2f}", forecast, kCeiling[s_level]);
     }
