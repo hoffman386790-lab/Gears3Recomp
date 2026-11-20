@@ -465,7 +465,7 @@ void XamRegisterSaves()
             const auto name = entry.path().filename().string();
             if (name.empty() || name.size() >= XCONTENT_MAX_FILENAME)
                 continue;
-            XCONTENT_DATA data = XamMakeContent(XCONTENTTYPE_MARKETPLACE, name);
+            XCONTENT_DATA data = XamMakeContent(2, name);
             XamRegisterContent(data, (const char*)entry.path().u8string().c_str());
             ++dlc_count;
         }
