@@ -3,6 +3,7 @@ package com.xport;
 
 import android.os.Build;
 import android.os.CombinedVibration;
+import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
@@ -589,7 +590,12 @@ public class MainActivity extends Activity {
                 if (maxAmp == 0) {
                     v.cancel();
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    v.vibrate(VibrationEffect.createOneShot(150, maxAmp));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        v.vibrate(VibrationEffect.createOneShot(150, maxAmp),
+                            new VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_GAME).build());
+                    } else {
+                        v.vibrate(VibrationEffect.createOneShot(150, maxAmp));
+                    }
                 } else {
                     v.vibrate(150);
                 }

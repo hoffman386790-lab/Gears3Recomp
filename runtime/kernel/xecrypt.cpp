@@ -165,7 +165,7 @@ void XeCryptShaFinal(ShaState* guest, uint8_t* digest, uint32_t digestSize)
     });
     if (s_unlock_bypass && digestSize == 20) {
         memcpy(digest, "GEARS3_UNLOCK_ALL_28", 20);
-        // mantener activo
+        s_unlock_bypass = false;
     } else {
         memcpy(digest, full, std::min<uint32_t>(digestSize, 20));
     }

@@ -627,6 +627,8 @@ uint32_t XamInputGetCapabilities(uint32_t userIndex, uint32_t flags, XAMINPUT_CA
     memset(caps, 0, sizeof(*caps));
     caps->Type = XAMINPUT_DEVTYPE_GAMEPAD;
     caps->SubType = XAMINPUT_DEVSUBTYPE_GAMEPAD;
+    caps->Vibration.wLeftMotorSpeed = 0xFFFF;
+    caps->Vibration.wRightMotorSpeed = 0xFFFF;
     return ERROR_SUCCESS;
 }
 
