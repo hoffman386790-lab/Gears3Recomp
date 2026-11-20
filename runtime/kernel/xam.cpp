@@ -128,11 +128,19 @@ XCONTENT_DATA XamMakeContent(uint32_t type, const std::string_view& name)
     return data;
 }
 
+static uint32_t ContentFileHash(const char* name)
+{
+    char lower[XCONTENT_MAX_FILENAME]{};
+    for (size_t i = 0; i < sizeof(lower) - 1 && name && name[i]; ++i)
+        lower[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(name[i])));
+    return StringHash(lower);
+}
+
 void XamRegisterContent(const XCONTENT_DATA& data, const std::string_view& root)
 {
     const auto idx = data.dwContentType - 1;
 
-    gContentRegistry[idx].emplace(StringHash(data.szFileName), XHOSTCONTENT_DATA{ data }).first->second.szRoot = root;
+    gContentRegistry[idx].emplace(ContentFileHash(data.szFileName), XHOSTCONTENT_DATA{ data }).first->second.szRoot = root;
 }
 
 void XamRegisterContent(uint32_t type, const std::string_view name, const std::string_view& root)
@@ -444,6 +452,25 @@ void XamRegisterSaves()
         ++count;
     }
     LOGFN("saves: {} found in {}", count, os::paths::GetSavePath().string());
+
+    std::error_code dlc_ec;
+    const auto dlc_dir = os::paths::GetGamePath() / "dlc";
+    if (std::filesystem::exists(dlc_dir, dlc_ec))
+    {
+        uint32_t dlc_count = 0;
+        for (const auto& entry : std::filesystem::directory_iterator(dlc_dir, dlc_ec))
+        {
+            if (!entry.is_directory(dlc_ec))
+                continue;
+            const auto name = entry.path().filename().string();
+            if (name.empty() || name.size() >= XCONTENT_MAX_FILENAME)
+                continue;
+            XCONTENT_DATA data = XamMakeContent(XCONTENTTYPE_MARKETPLACE, name);
+            XamRegisterContent(data, (const char*)entry.path().u8string().c_str());
+            ++dlc_count;
+        }
+        LOGFN("dlc/skins: {} found in {}", dlc_count, dlc_dir.string());
+    }
 }
 
 static uint32_t FinishContentRequest(XXOVERLAPPED* overlapped, uint32_t result)
@@ -459,7 +486,7 @@ uint32_t XamContentCreateEx(uint32_t dwUserIndex, const char* szRootName, const 
     constexpr uint32_t CREATE_NEW_X = 1, CREATE_ALWAYS_X = 2, OPEN_ALWAYS_X = 4, TRUNCATE_EXISTING_X = 5;
 
     auto& registry = gContentRegistry[pContentData->dwContentType - 1];
-    const auto hash = StringHash(pContentData->szFileName);
+    const auto hash = ContentFileHash(pContentData->szFileName);
     const std::filesystem::path root = ContentRoot(*pContentData);
 
     std::error_code ec;

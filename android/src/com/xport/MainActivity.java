@@ -53,6 +53,35 @@ public class MainActivity extends Activity {
     private static native void nativeSetPad(int buttons, int leftTrigger, int rightTrigger,
             int thumbLX, int thumbLY, int thumbRX, int thumbRY);
     private static native void nativeSetFocus(boolean focus);
+    private static void launcherVibrate(int leftMotor, int rightMotor) {
+        int amp = Math.max(leftMotor, rightMotor) >> 8;
+        if (amp > 255) amp = 255;
+        for (int id : android.view.InputDevice.getDeviceIds()) {
+            android.view.InputDevice dev = android.view.InputDevice.getDevice(id);
+            if (dev == null) continue;
+            int src = dev.getSources();
+            if ((src & android.view.InputDevice.SOURCE_GAMEPAD) == 0 &&
+                (src & android.view.InputDevice.SOURCE_JOYSTICK) == 0) continue;
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                android.os.VibratorManager vm = dev.getVibratorManager();
+                if (vm != null && vm.getVibratorIds().length > 0) {
+                    if (amp <= 10) vm.cancel();
+                    else vm.vibrate(android.os.CombinedVibration.createParallel(
+                        android.os.VibrationEffect.createOneShot(180, amp)));
+                    return;
+                }
+            }
+            android.os.Vibrator vib = dev.getVibrator();
+            if (vib != null && vib.hasVibrator()) {
+                if (amp <= 10) vib.cancel();
+                else if (android.os.Build.VERSION.SDK_INT >= 26)
+                    vib.vibrate(android.os.VibrationEffect.createOneShot(180, amp));
+                else vib.vibrate(180);
+                return;
+            }
+        }
+    }
+
     private static native void nativeSetBackground(boolean background);
 
     // The launcher (runtime/os/launcher.cpp).

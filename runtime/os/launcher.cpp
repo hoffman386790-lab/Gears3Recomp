@@ -665,6 +665,22 @@ void RequestCopyText(const std::string& text)
 using namespace launcher;
 
 // MainActivity.onCreate: the launcher starts; it draws once its SurfaceView has a surface.
+extern "C" void xport_android_vibrate(uint16_t left, uint16_t right)
+{
+#ifdef __ANDROID__
+    if (!g_vm || !g_activity) return;
+    JNIEnv* env = nullptr;
+    bool attached = false;
+    if (g_vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        if (g_vm->AttachCurrentThread(&env, nullptr) != JNI_OK) return;
+        attached = true;
+    }
+    jmethodID m = env->GetStaticMethodID(g_activity, "launcherVibrate", "(II)V");
+    if (m) env->CallStaticVoidMethod(g_activity, m, static_cast<jint>(left), static_cast<jint>(right));
+    if (attached) g_vm->DetachCurrentThread();
+#endif
+}
+
 extern "C" JNIEXPORT void JNICALL Java_com_xport_MainActivity_nativeLauncherStart(JNIEnv* env, jclass activity,
     jobject assets, jstring externalDir, jstring internalDir, jstring nativeLibDir, jstring version, jstring device,
     jstring locale, jfloat density, jlong availMem, jlong totalMem)
