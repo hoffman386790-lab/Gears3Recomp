@@ -711,14 +711,31 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
         }
 
         if (env != nullptr) {
-            jclass cls = env->FindClass("com/xport/MainActivity");
-            if (cls != nullptr) {
-                jmethodID mid = env->GetStaticMethodID(cls, "setGamepadRumble", "(II)V");
-                if (mid != nullptr) {
-                    env->CallStaticVoidMethod(cls, mid, (jint)left, (jint)right);
+            jclass threadCls = env->FindClass("java/lang/Thread");
+            jmethodID currentThreadMid = env->GetStaticMethodID(threadCls, "currentThread", "()Ljava/lang/Thread;");
+            jobject threadObj = env->CallStaticObjectMethod(threadCls, currentThreadMid);
+            jmethodID getLoaderMid = env->GetMethodID(threadCls, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
+            jobject classLoader = env->CallObjectMethod(threadObj, getLoaderMid);
+
+            jclass loaderCls = env->FindClass("java/lang/ClassLoader");
+            jmethodID loadClassMid = env->GetMethodID(loaderCls, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+
+            if (classLoader != nullptr && loadClassMid != nullptr) {
+                jstring clsName = env->NewStringUTF("com.xport.MainActivity");
+                jclass cls = (jclass)env->CallObjectMethod(classLoader, loadClassMid, clsName);
+                env->DeleteLocalRef(clsName);
+
+                if (cls != nullptr && !env->ExceptionCheck()) {
+                    jmethodID mid = env->GetStaticMethodID(cls, "setGamepadRumble", "(II)V");
+                    if (mid != nullptr) {
+                        env->CallStaticVoidMethod(cls, mid, (jint)left, (jint)right);
+                    }
+                    env->DeleteLocalRef(cls);
+                } else {
+                    env->ExceptionClear();
                 }
-                env->DeleteLocalRef(cls);
             }
+            if (env->ExceptionCheck()) env->ExceptionClear();
             if (attached) {
                 g_vm->DetachCurrentThread();
             }
