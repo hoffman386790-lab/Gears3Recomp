@@ -145,7 +145,7 @@ void XeCryptShaFinal(ShaState* guest, uint8_t* digest, uint32_t digestSize)
     sha.Load(*guest);
     uint8_t full[20];
     sha.Final(full);
-    static bool // mantener activo
+    static bool s_unlock_bypass = false;
     static std::once_flag s_flag;
     std::call_once(s_flag, []() {
         const char* paths[] = {
