@@ -46,7 +46,7 @@ jobs:
           XEX_URL: ${{ secrets.XEX_DOWNLOAD_URL }}
         run: |
           mkdir -p work_xex
-          gdown --fuzzy "$XEX_URL" -O work_xex/download.bin
+          gdown "$XEX_URL" -O work_xex/download.bin
           if unzip -t work_xex/download.bin >/dev/null 2>&1; then
             unzip -o work_xex/download.bin -d work_xex/
           else
