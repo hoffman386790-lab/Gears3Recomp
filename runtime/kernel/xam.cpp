@@ -681,7 +681,7 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
     return ERROR_SUCCESS;
 }
 
-uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XINPUT_VIBRATION* vibration)
+uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
 {
     if (userIndex != 0)
         return ERROR_DEVICE_NOT_CONNECTED;
