@@ -696,33 +696,6 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
 
 uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
 {
-#ifdef __ANDROID__
-    if (vibration) {
-        JavaVM* vm = nullptr;
-        jsize count = 0;
-        using FnGetVMs = jint(*)(JavaVM**, jsize, jsize*);
-        static FnGetVMs fnGetVMs = reinterpret_cast<FnGetVMs>(dlsym(RTLD_DEFAULT, "JNI_GetCreatedJavaVMs"));
-        if (fnGetVMs != nullptr && fnGetVMs(&vm, 1, &count) == JNI_OK && count > 0 && vm != nullptr) {
-            JNIEnv* env = nullptr;
-            bool attached = false;
-            if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
-                if (vm->AttachCurrentThread(&env, nullptr) == JNI_OK) attached = true;
-            }
-            if (env != nullptr) {
-                jclass cls = env->FindClass("com/xport/MainActivity");
-                if (cls != nullptr) {
-                    jmethodID mid = env->GetStaticMethodID(cls, "launcherVibrate", "(II)V");
-                    if (mid != nullptr) {
-                        env->CallStaticVoidMethod(cls, mid, (jint)vibration->wLeftMotorSpeed, (jint)vibration->wRightMotorSpeed);
-                    }
-                    env->DeleteLocalRef(cls);
-                }
-                if (env->ExceptionCheck()) env->ExceptionClear();
-                if (attached) vm->DetachCurrentThread();
-            }
-        }
-    }
-#endif
     if (userIndex != 0)
         return ERROR_DEVICE_NOT_CONNECTED;
 
