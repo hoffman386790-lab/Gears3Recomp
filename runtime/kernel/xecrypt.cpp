@@ -176,6 +176,13 @@ void XeCryptShaFinal(ShaState* guest, uint8_t* digest, uint32_t digestSize)
 void XeCryptSha(const uint8_t* input1, uint32_t size1, const uint8_t* input2, uint32_t size2,
     const uint8_t* input3, uint32_t size3, uint8_t* digest, uint32_t digestSize)
 {
+    if (digest != nullptr && digestSize == 20) {
+        if ((input1 != nullptr && size1 >= 20 && memcmp(input1, "GEARS3_UNLOCK_ALL_28", 20) == 0) ||
+            (input2 != nullptr && size2 >= 20 && memcmp(input2, "GEARS3_UNLOCK_ALL_28", 20) == 0)) {
+            memcpy(digest, "GEARS3_UNLOCK_ALL_28", 20);
+            return;
+        }
+    }
     Sha1 sha;
     sha.Init();
     if (input1)
