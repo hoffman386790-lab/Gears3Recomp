@@ -116,6 +116,7 @@ public class MainActivity extends Activity {
                 }
             }
         } catch (Throwable ignored) {}
+    }
 
     private static native void nativeSetBackground(boolean background);
 
