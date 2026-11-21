@@ -1,5 +1,3 @@
-#include <fstream>
-#include <filesystem>
 // profile settings of the one local profile (user 0). Layout and sizing follow Xenia's
 // XamUserReadProfileSettingsEx (BSD): an 8-byte header, then one 40-byte X_USER_PROFILE_SETTING
 // per requested id, then the binary/string payloads. The title reads seven integer options plus its
@@ -8,6 +6,9 @@
 //
 // Values written by the game are kept in memory for the session (not saved to disk yet).
 #include <stdafx.h>
+#include <os/paths.h>
+#include <fstream>
+#include <filesystem>
 #include <kernel/function.h>
 #include <kernel/xdm.h>
 #include <os/logger.h>
