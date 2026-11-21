@@ -560,6 +560,8 @@ public class MainActivity extends Activity {
     public static void setGamepadRumble(int leftMotor, int rightMotor) {
         launcherVibrate(leftMotor, rightMotor);
         if (true) return;
+        launcherVibrate(leftMotor, rightMotor);
+        if (true) return;
         int leftAmp = Math.min(255, (leftMotor * 255) / 65535);
         int rightAmp = Math.min(255, (rightMotor * 255) / 65535);
         int maxAmp = Math.max(leftAmp, rightAmp);
