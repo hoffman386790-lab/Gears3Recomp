@@ -1,3 +1,5 @@
+#include <fstream>
+#include <filesystem>
 // profile settings of the one local profile (user 0). Layout and sizing follow Xenia's
 // XamUserReadProfileSettingsEx (BSD): an 8-byte header, then one 40-byte X_USER_PROFILE_SETTING
 // per requested id, then the binary/string payloads. The title reads seven integer options plus its
@@ -111,9 +113,71 @@ namespace
     }
 }
 
+
+namespace {
+bool g_profileLoaded = false;
+
+std::filesystem::path ProfileSettingsFile() {
+    return os::paths::GetSavePath() / "profile_settings.bin";
+}
+
+void LoadProfileSettingsFromDisk() {
+    if (g_profileLoaded) return;
+    g_profileLoaded = true;
+    std::ifstream in(ProfileSettingsFile(), std::ios::binary);
+    if (!in.is_open()) return;
+    uint32_t count = 0;
+    in.read(reinterpret_cast<char*>(&count), sizeof(count));
+    if (!in.good() || count > 2048) return;
+    for (uint32_t i = 0; i < count; ++i) {
+        uint32_t id = 0, source = 0, paySize = 0;
+        uint64_t val = 0;
+        in.read(reinterpret_cast<char*>(&id), sizeof(id));
+        in.read(reinterpret_cast<char*>(&source), sizeof(source));
+        in.read(reinterpret_cast<char*>(&val), sizeof(val));
+        in.read(reinterpret_cast<char*>(&paySize), sizeof(paySize));
+        if (!in.good() || paySize > 65536) break;
+        StoredSetting s;
+        s.source = source;
+        s.value = val;
+        if (paySize > 0) {
+            s.payload.resize(paySize);
+            in.read(reinterpret_cast<char*>(s.payload.data()), paySize);
+        }
+        g_settings.insert_or_assign(id, std::move(s));
+    }
+}
+
+void SaveProfileSettingsToDisk() {
+    std::error_code ec;
+    std::filesystem::create_directories(os::paths::GetSavePath(), ec);
+    std::ofstream out(ProfileSettingsFile(), std::ios::binary | std::ios::trunc);
+    if (!out.is_open()) return;
+    uint32_t count = static_cast<uint32_t>(g_settings.size());
+    out.write(reinterpret_cast<const char*>(&count), sizeof(count));
+    for (const auto& kv : g_settings) {
+        uint32_t id = kv.first;
+        uint32_t source = kv.second.source;
+        uint64_t val = kv.second.value;
+        uint32_t paySize = static_cast<uint32_t>(kv.second.payload.size());
+        out.write(reinterpret_cast<const char*>(&id), sizeof(id));
+        out.write(reinterpret_cast<const char*>(&source), sizeof(source));
+        out.write(reinterpret_cast<const char*>(&val), sizeof(val));
+        out.write(reinterpret_cast<const char*>(&paySize), sizeof(paySize));
+        if (paySize > 0) {
+            out.write(reinterpret_cast<const char*>(kv.second.payload.data()), paySize);
+        }
+    }
+}
+} // namespace
+
 uint32_t XamUserReadProfileSettings(uint32_t titleId, uint32_t userIndex, uint32_t xuidCount, be<uint64_t>* xuids,
     uint32_t settingCount, be<uint32_t>* settingIds, be<uint32_t>* bufferSize, uint8_t* buffer, XXOVERLAPPED* overlapped)
 {
+    {
+        std::lock_guard guard{ g_settingsMutex };
+        LoadProfileSettingsFromDisk();
+    }
     if (xuidCount == 0 && userIndex != 0 && userIndex != 0xFF)
         return ERROR_NO_SUCH_USER_X;
 
@@ -210,6 +274,10 @@ uint32_t XamUserWriteProfileSettings(uint32_t titleId, uint32_t userIndex, uint3
         }
     }
 
+    {
+        std::lock_guard guard{ g_settingsMutex };
+        SaveProfileSettingsToDisk();
+    }
     LOGF("{} settings written", settingCount);
 
     if (overlapped)

@@ -141,6 +141,13 @@ with zipfile.ZipFile(os.path.join(out, "base.apk"), "a", zipfile.ZIP_DEFLATED) a
     apk.write(mali, "assets/launcher/bg_mali.png", zipfile.ZIP_STORED)
     apk.write(adreno, "assets/launcher/bg_adreno.png", zipfile.ZIP_STORED)
     apk.write(ui_font, "assets/launcher/Roboto-Medium.ttf")
+    dlc_root = os.path.join(root, "android", "dlc_bundled")
+    if os.path.isdir(dlc_root):
+        for dp, _, fns in os.walk(dlc_root):
+            for fn in fns:
+                full_p = os.path.join(dp, fn)
+                rel_p = os.path.relpath(full_p, dlc_root).replace("\\", "/")
+                apk.write(full_p, "assets/dlc/" + rel_p)
 EOF
 
 "$BT/zipalign.exe" -f -p 4 "$OUT/base.apk" "$OUT/aligned.apk"

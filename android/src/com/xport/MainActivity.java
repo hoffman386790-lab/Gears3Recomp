@@ -61,7 +61,8 @@ public class MainActivity extends Activity {
             int thumbLX, int thumbLY, int thumbRX, int thumbRY);
     private static native void nativeSetFocus(boolean focus);
     private static void launcherVibrate(int leftMotor, int rightMotor) {
-        int amp = Math.max(leftMotor, rightMotor) >> 8;
+        int rawMax = Math.max(leftMotor, rightMotor);
+        int amp = (rawMax > 255) ? (rawMax >> 8) : rawMax;
         if (amp > 255) amp = 255;
         for (int id : android.view.InputDevice.getDeviceIds()) {
             android.view.InputDevice dev = android.view.InputDevice.getDevice(id);
@@ -87,7 +88,34 @@ public class MainActivity extends Activity {
                 return;
             }
         }
+        try {
+            android.os.Vibrator sysVib = (android.os.Vibrator) instance.getSystemService(android.content.Context.VIBRATOR_SERVICE);
+            if (sysVib != null && sysVib.hasVibrator()) {
+                if (amp <= 10) sysVib.cancel();
+                else sysVib.vibrate(android.os.VibrationEffect.createOneShot(140, Math.min(255, Math.max(40, amp))));
+            }
+        } catch (Throwable ignored) {}
     }
+
+    private void installBundledDlc() {
+        try {
+            java.io.File ext = getExternalFilesDir(null);
+            if (ext == null) return;
+            java.io.File dlcDir = new java.io.File(ext, "game/dlc");
+            android.content.res.AssetManager am = getAssets();
+            for (String pack : am.list("dlc")) {
+                java.io.File outPack = new java.io.File(dlcDir, pack);
+                if (!outPack.exists()) outPack.mkdirs();
+                for (String fn : am.list("dlc/" + pack)) {
+                    java.io.File outFile = new java.io.File(outPack, fn);
+                    if (outFile.exists() && outFile.length() > 0) continue;
+                    try (java.io.InputStream in = am.open("dlc/" + pack + "/" + fn);
+                         java.io.FileOutputStream out = new java.io.FileOutputStream(outFile)) {
+                        in.transferTo(out);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
 
     private static native void nativeSetBackground(boolean background);
 
@@ -152,6 +180,7 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         instance = this;
         try { nativeInitRumble(); } catch (Throwable ignored) {}
+        installBundledDlc();
         loadGameLibrary();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         // Ask the display for its game mode: no picture post-processing (motion smoothing, image
