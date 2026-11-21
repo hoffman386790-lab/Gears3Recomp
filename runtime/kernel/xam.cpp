@@ -700,7 +700,9 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
     if (vibration) {
         JavaVM* vm = nullptr;
         jsize count = 0;
-        if (JNI_GetCreatedJavaVMs(&vm, 1, &count) == JNI_OK && count > 0 && vm != nullptr) {
+        using FnGetVMs = jint(*)(JavaVM**, jsize, jsize*);
+        static FnGetVMs fnGetVMs = reinterpret_cast<FnGetVMs>(dlsym(RTLD_DEFAULT, "JNI_GetCreatedJavaVMs"));
+        if (fnGetVMs != nullptr && fnGetVMs(&vm, 1, &count) == JNI_OK && count > 0 && vm != nullptr) {
             JNIEnv* env = nullptr;
             bool attached = false;
             if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
