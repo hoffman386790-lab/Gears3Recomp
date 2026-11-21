@@ -698,8 +698,8 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
 uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
 {
 #ifdef __ANDROID__
-    if (pVibration) {
-        xport_android_vibrate(pVibration->wLeftMotorSpeed, pVibration->wRightMotorSpeed);
+    if (vibration) {
+        xport_android_vibrate(vibration->wLeftMotorSpeed, vibration->wRightMotorSpeed);
     }
 #endif
     if (userIndex != 0)
