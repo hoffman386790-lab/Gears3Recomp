@@ -1,4 +1,3 @@
-extern "C" void xport_android_vibrate(uint16_t left, uint16_t right);
 #ifdef __ANDROID__
 #include <jni.h>
 #include <dlfcn.h>
@@ -699,7 +698,27 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
 {
 #ifdef __ANDROID__
     if (vibration) {
-        xport_android_vibrate(vibration->wLeftMotorSpeed, vibration->wRightMotorSpeed);
+        JavaVM* vm = nullptr;
+        jsize count = 0;
+        if (JNI_GetCreatedJavaVMs(&vm, 1, &count) == JNI_OK && count > 0 && vm != nullptr) {
+            JNIEnv* env = nullptr;
+            bool attached = false;
+            if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
+                if (vm->AttachCurrentThread(&env, nullptr) == JNI_OK) attached = true;
+            }
+            if (env != nullptr) {
+                jclass cls = env->FindClass("com/xport/MainActivity");
+                if (cls != nullptr) {
+                    jmethodID mid = env->GetStaticMethodID(cls, "launcherVibrate", "(II)V");
+                    if (mid != nullptr) {
+                        env->CallStaticVoidMethod(cls, mid, (jint)vibration->wLeftMotorSpeed, (jint)vibration->wRightMotorSpeed);
+                    }
+                    env->DeleteLocalRef(cls);
+                }
+                if (env->ExceptionCheck()) env->ExceptionClear();
+                if (attached) vm->DetachCurrentThread();
+            }
+        }
     }
 #endif
     if (userIndex != 0)
