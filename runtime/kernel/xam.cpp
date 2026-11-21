@@ -1,3 +1,4 @@
+extern "C" void xport_android_vibrate(uint16_t left, uint16_t right);
 #ifdef __ANDROID__
 #include <jni.h>
 #include <dlfcn.h>
@@ -696,6 +697,11 @@ uint32_t XamInputGetState(uint32_t userIndex, uint32_t flags, XAMINPUT_STATE* st
 
 uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION* vibration)
 {
+#ifdef __ANDROID__
+    if (pVibration) {
+        xport_android_vibrate(pVibration->wLeftMotorSpeed, pVibration->wRightMotorSpeed);
+    }
+#endif
     if (userIndex != 0)
         return ERROR_DEVICE_NOT_CONNECTED;
 
