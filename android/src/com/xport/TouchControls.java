@@ -132,10 +132,10 @@ public class TouchControls extends View {
         buttons.add(new Button("◄", DPAD_LEFT, 0.025f, 0.51f, 19, gray));
         buttons.add(new Button("►", DPAD_RIGHT, 0.095f, 0.51f, 19, gray));
         rightStick.follow = true;
-        editToggleX = width * 0.50f;
-        editToggleY = height * 0.035f;
+        editToggleX = getWidth() * 0.50f;
+        editToggleY = getHeight() * 0.035f;
         editToggleR = 20 * density;
-        loadCustomHud(width, height);
+        loadCustomHud(getWidth(), getHeight());
     }
 
     void loadCustomHud(int width, int height) {
@@ -219,10 +219,10 @@ public class TouchControls extends View {
         rightStick.defaultX = 0.62f * width;
         rightStick.defaultY = 0.72f * height;
         text.setTextSize(13 * density * scale);
-        editToggleX = width * 0.50f;
-        editToggleY = height * 0.035f;
+        editToggleX = getWidth() * 0.50f;
+        editToggleY = getHeight() * 0.035f;
         editToggleR = 20 * density;
-        loadCustomHud(width, height);
+        loadCustomHud(getWidth(), getHeight());
     }
 
     private static float clamp(float value) {
