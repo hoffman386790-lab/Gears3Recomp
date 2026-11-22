@@ -109,22 +109,24 @@ public class TouchControls extends View {
         int blue = Color.rgb(70, 130, 240), yellow = Color.rgb(240, 200, 50);
         int gray = Color.rgb(200, 200, 200);
         // Positions as fractions of the view size, radii in dp.
-        buttons.add(new Button("A", A, 0.875f, 0.86f, 30, green));
-        buttons.add(new Button("B", B, 0.945f, 0.70f, 30, red));
-        buttons.add(new Button("X", X, 0.805f, 0.70f, 30, blue));
-        buttons.add(new Button("Y", Y, 0.875f, 0.54f, 30, yellow));
-        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.945f, 0.36f, 32, gray));
-        buttons.add(new Button("LT", LEFT_TRIGGER, 0.805f, 0.36f, 32, gray));
-        buttons.add(new Button("RB", RIGHT_SHOULDER, 0.945f, 0.13f, 26, gray));
-        buttons.add(new Button("R3", RIGHT_THUMB, 0.805f, 0.13f, 22, gray));
-        buttons.add(new Button("LB", LEFT_SHOULDER, 0.055f, 0.13f, 26, gray));
-        buttons.add(new Button("L3", LEFT_THUMB, 0.17f, 0.13f, 22, gray));
-        buttons.add(new Button("BACK", BACK, 0.43f, 0.07f, 22, gray));
-        buttons.add(new Button("START", START, 0.57f, 0.07f, 22, gray));
-        buttons.add(new Button("▲", DPAD_UP, 0.055f, 0.31f, 18, gray));
-        buttons.add(new Button("▼", DPAD_DOWN, 0.055f, 0.53f, 18, gray));
-        buttons.add(new Button("◀", DPAD_LEFT, 0.020f, 0.42f, 18, gray));
-        buttons.add(new Button("▶", DPAD_RIGHT, 0.090f, 0.42f, 18, gray));
+        // Layout ergonomico estilo shooter movil con camara libre en mitad derecha
+        buttons.add(new Button("A", A, 0.89f, 0.84f, 35, green));
+        buttons.add(new Button("B", B, 0.78f, 0.85f, 30, red));
+        buttons.add(new Button("X", X, 0.80f, 0.65f, 29, blue));
+        buttons.add(new Button("Y", Y, 0.72f, 0.49f, 26, yellow));
+        buttons.add(new Button("RB", RIGHT_SHOULDER, 0.93f, 0.62f, 28, gray));
+        buttons.add(new Button("LT", LEFT_TRIGGER, 0.70f, 0.71f, 32, gray));
+        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.93f, 0.37f, 34, red));
+        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.08f, 0.22f, 34, red));
+        buttons.add(new Button("R3", RIGHT_THUMB, 0.82f, 0.14f, 22, gray));
+        buttons.add(new Button("LB", LEFT_SHOULDER, 0.20f, 0.14f, 24, gray));
+        buttons.add(new Button("L3", LEFT_THUMB, 0.31f, 0.14f, 22, gray));
+        buttons.add(new Button("BACK", BACK, 0.44f, 0.08f, 21, gray));
+        buttons.add(new Button("START", START, 0.56f, 0.08f, 21, gray));
+        buttons.add(new Button("▲", DPAD_UP, 0.06f, 0.42f, 19, gray));
+        buttons.add(new Button("▼", DPAD_DOWN, 0.06f, 0.60f, 19, gray));
+        buttons.add(new Button("◄", DPAD_LEFT, 0.025f, 0.51f, 19, gray));
+        buttons.add(new Button("►", DPAD_RIGHT, 0.095f, 0.51f, 19, gray));
         rightStick.follow = true;
     }
 
@@ -173,9 +175,9 @@ public class TouchControls extends View {
             button.radius = button.radiusDp * density * scale;
         }
         leftStick.radius = 64 * density * scale;
-        leftStick.defaultX = 0.17f * width;
-        leftStick.defaultY = 0.72f * height;
-        rightStick.radius = 48 * density * scale;
+        leftStick.defaultX = 0.18f * width;
+        leftStick.defaultY = 0.77f * height;
+        rightStick.radius = 32 * density * scale;
         rightStick.defaultX = 0.62f * width;
         rightStick.defaultY = 0.72f * height;
         text.setTextSize(13 * density * scale);
@@ -317,7 +319,7 @@ public class TouchControls extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         drawStick(canvas, leftStick);
-        drawStick(canvas, rightStick);
+        // Camara libre con el dedo en mitad derecha (sin circulo estorboso)
         for (Button button : buttons) {
             boolean pressed = button.pointer >= 0;
             fill.setColor(Color.argb(pressed ? 170 : 55, Color.red(button.color),
