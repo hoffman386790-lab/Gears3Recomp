@@ -21,6 +21,10 @@ import java.util.ArrayList;
 //     (the phone is d-pad up), BACK and START at the top centre.
 // A finger that lands on a button keeps it pressed until it is lifted.
 public class TouchControls extends View {
+    boolean editMode = false;
+    Button draggingBtn = null;
+    float editToggleX, editToggleY, editToggleR;
+    long editDownTime = 0;
     // XAMINPUT_GAMEPAD_* bits.
     static final int DPAD_UP = 0x0001, DPAD_DOWN = 0x0002, DPAD_LEFT = 0x0004, DPAD_RIGHT = 0x0008;
     static final int START = 0x0010, BACK = 0x0020, LEFT_THUMB = 0x0040, RIGHT_THUMB = 0x0080;
@@ -396,18 +400,13 @@ public class TouchControls extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         drawStick(canvas, leftStick);
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(editMode ? 0xCC00CC66 : 0x55222222);
-        canvas.drawCircle(editToggleX, editToggleY, editToggleR, paint);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(1.5f * density);
-        paint.setColor(editMode ? 0xFFFFFFFF : 0x88CCCCCC);
-        canvas.drawCircle(editToggleX, editToggleY, editToggleR, paint);
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(0xFFFFFFFF);
-        paint.setTextSize(9.5f * density);
-        paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText(editMode ? "OK" : "HUD", editToggleX, editToggleY + 3.5f * density, paint);
+        fill.setColor(editMode ? 0xCC00CC66 : 0x66222222);
+        canvas.drawCircle(editToggleX, editToggleY, editToggleR, fill);
+        stroke.setColor(editMode ? 0xFFFFFFFF : 0x99CCCCCC);
+        canvas.drawCircle(editToggleX, editToggleY, editToggleR, stroke);
+        text.setColor(0xFFFFFFFF);
+        text.setTextSize(9.5f * density);
+        canvas.drawText(editMode ? "OK" : "HUD", editToggleX, editToggleY + 3.5f * density, text);
 
         // Camara libre con el dedo en mitad derecha (sin circulo estorboso)
         for (Button button : buttons) {
