@@ -128,6 +128,40 @@ public class TouchControls extends View {
         buttons.add(new Button("◄", DPAD_LEFT, 0.025f, 0.51f, 19, gray));
         buttons.add(new Button("►", DPAD_RIGHT, 0.095f, 0.51f, 19, gray));
         rightStick.follow = true;
+        editToggleX = width * 0.50f;
+        editToggleY = height * 0.035f;
+        editToggleR = 20 * density;
+        loadCustomHud(width, height);
+    }
+
+    void loadCustomHud(int width, int height) {
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE);
+        for (int i = 0; i < buttons.size(); i++) {
+            Button b = buttons.get(i);
+            float nx = prefs.getFloat("btn_x_" + i, -1f);
+            float ny = prefs.getFloat("btn_y_" + i, -1f);
+            if (nx >= 0f && ny >= 0f) {
+                b.x = nx * width;
+                b.y = ny * height;
+            }
+        }
+    }
+
+    void saveCustomHud() {
+        int w = getWidth(), h = getHeight();
+        if (w <= 0 || h <= 0) return;
+        android.content.SharedPreferences.Editor ed = getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE).edit();
+        for (int i = 0; i < buttons.size(); i++) {
+            Button b = buttons.get(i);
+            ed.putFloat("btn_x_" + i, b.x / w);
+            ed.putFloat("btn_y_" + i, b.y / h);
+        }
+        ed.apply();
+    }
+
+    void resetCustomHud() {
+        getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE).edit().clear().apply();
+        layout(getWidth(), getHeight());
     }
 
     void setListener(Listener listener) {
@@ -204,6 +238,49 @@ public class TouchControls extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (!visible) return false;
+        int act = event.getActionMasked();
+        float tx = event.getX(), ty = event.getY();
+        if (act == MotionEvent.ACTION_DOWN) {
+            if (Math.hypot(tx - editToggleX, ty - editToggleY) <= editToggleR * 1.35f) {
+                editDownTime = System.currentTimeMillis();
+                return true;
+            }
+            if (editMode) {
+                Button best = null;
+                float bestD = Float.MAX_VALUE;
+                for (Button b : buttons) {
+                    float d = (float) Math.hypot(tx - b.x, ty - b.y);
+                    if (d <= b.radius * 1.4f && d < bestD) { best = b; bestD = d; }
+                }
+                draggingBtn = best;
+                return true;
+            }
+        } else if (act == MotionEvent.ACTION_MOVE && editMode && draggingBtn != null) {
+            draggingBtn.x = Math.max(draggingBtn.radius, Math.min(getWidth() - draggingBtn.radius, tx));
+            draggingBtn.y = Math.max(draggingBtn.radius, Math.min(getHeight() - draggingBtn.radius, ty));
+            invalidate();
+            return true;
+        } else if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) {
+            if (editDownTime > 0) {
+                long held = System.currentTimeMillis() - editDownTime;
+                editDownTime = 0;
+                if (held >= 900) {
+                    editMode = false;
+                    resetCustomHud();
+                } else {
+                    editMode = !editMode;
+                    if (!editMode) saveCustomHud();
+                }
+                invalidate();
+                return true;
+            }
+            if (editMode) {
+                draggingBtn = null;
+                return true;
+            }
+        }
+        if (editMode) return true;
         int action = event.getActionMasked();
         int index = event.getActionIndex();
         switch (action) {
@@ -319,6 +396,19 @@ public class TouchControls extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         drawStick(canvas, leftStick);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(editMode ? 0xCC00CC66 : 0x55222222);
+        canvas.drawCircle(editToggleX, editToggleY, editToggleR, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1.5f * density);
+        paint.setColor(editMode ? 0xFFFFFFFF : 0x88CCCCCC);
+        canvas.drawCircle(editToggleX, editToggleY, editToggleR, paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0xFFFFFFFF);
+        paint.setTextSize(9.5f * density);
+        paint.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText(editMode ? "OK" : "HUD", editToggleX, editToggleY + 3.5f * density, paint);
+
         // Camara libre con el dedo en mitad derecha (sin circulo estorboso)
         for (Button button : buttons) {
             boolean pressed = button.pointer >= 0;

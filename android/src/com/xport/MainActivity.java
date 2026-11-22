@@ -61,43 +61,54 @@ public class MainActivity extends Activity {
             int thumbLX, int thumbLY, int thumbRX, int thumbRY);
     private static native void nativeSetFocus(boolean focus);
     private static void launcherVibrate(int leftMotor, int rightMotor) {
-        int rawMax = Math.max(leftMotor, rightMotor);
-        int baseAmp = (rawMax > 255) ? (rawMax >> 8) : rawMax;
-        int amp = (baseAmp > 10) ? Math.min(255, Math.max(150, baseAmp * 2)) : 0;
+        int rawMax = Math.max(leftMotor & 0xFFFF, rightMotor & 0xFFFF);
+        int amp = (rawMax > 255) ? (rawMax >> 8) : rawMax;
+        if (rawMax > 0 && amp < 180) amp = 255;
         if (amp > 255) amp = 255;
+
+        boolean gamepadVibrated = false;
         for (int id : android.view.InputDevice.getDeviceIds()) {
             android.view.InputDevice dev = android.view.InputDevice.getDevice(id);
             if (dev == null) continue;
             int src = dev.getSources();
             if ((src & android.view.InputDevice.SOURCE_GAMEPAD) == 0 &&
                 (src & android.view.InputDevice.SOURCE_JOYSTICK) == 0) continue;
-            if (android.os.Build.VERSION.SDK_INT >= 31) {
-                android.os.VibratorManager vm = dev.getVibratorManager();
-                if (vm != null && vm.getVibratorIds().length > 0) {
-                    if (amp <= 10) vm.cancel();
-                    else vm.vibrate(android.os.CombinedVibration.createParallel(
-                        android.os.VibrationEffect.createOneShot(180, amp)));
-                    return;
-                }
-            }
-            android.os.Vibrator vib = dev.getVibrator();
-            if (vib != null && vib.hasVibrator()) {
-                if (amp <= 10) vib.cancel();
-                else if (android.os.Build.VERSION.SDK_INT >= 26)
-                    vib.vibrate(android.os.VibrationEffect.createOneShot(180, amp));
-                else vib.vibrate(180);
-                return;
-            }
-        }
-        try {
-            android.os.Vibrator sysVib = (android.os.Vibrator) instance.getSystemService(android.content.Context.VIBRATOR_SERVICE);
-            if (sysVib != null && sysVib.hasVibrator()) {
-                if (amp <= 10) sysVib.cancel();
-                else sysVib.vibrate(android.os.VibrationEffect.createOneShot(280, Math.min(255, Math.max(40, amp))));
-            }
-        } catch (Throwable ignored) {}
-    }
 
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                try {
+                    android.os.VibratorManager vm = dev.getVibratorManager();
+                    if (vm != null && vm.getVibratorIds().length > 0) {
+                        if (amp <= 10) vm.cancel();
+                        else vm.vibrate(android.os.CombinedVibration.createParallel(
+                                android.os.VibrationEffect.createOneShot(260, 255)));
+                        gamepadVibrated = true;
+                    }
+                } catch (Throwable ignored) {}
+            }
+            try {
+                android.os.Vibrator vib = dev.getVibrator();
+                if (vib != null && vib.hasVibrator()) {
+                    if (amp <= 10) vib.cancel();
+                    else if (android.os.Build.VERSION.SDK_INT >= 26)
+                        vib.vibrate(android.os.VibrationEffect.createOneShot(260, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+                    else vib.vibrate(260);
+                    gamepadVibrated = true;
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        if (!gamepadVibrated && instance != null) {
+            try {
+                android.os.Vibrator sysVib = (android.os.Vibrator) instance.getSystemService(android.content.Context.VIBRATOR_SERVICE);
+                if (sysVib != null && sysVib.hasVibrator()) {
+                    if (amp <= 10) sysVib.cancel();
+                    else if (android.os.Build.VERSION.SDK_INT >= 26)
+                        sysVib.vibrate(android.os.VibrationEffect.createOneShot(180, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+                    else sysVib.vibrate(180);
+                }
+            } catch (Throwable ignored) {}
+        }
+    }
     private void installBundledDlc() {
         try {
             java.io.File ext = getExternalFilesDir(null);
