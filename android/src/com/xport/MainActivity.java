@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
     // per APK, tools/build-apk.sh).
     private void loadGameLibrary() {
         System.loadLibrary("game");
+            try { nativeInitRumble(); } catch (Throwable ignored) {}
     }
 
     private static native void nativeStart(String gameDir, String saveDir, String options);

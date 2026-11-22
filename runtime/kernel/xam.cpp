@@ -1,12 +1,16 @@
 #ifdef __ANDROID__
 #include <jni.h>
 #include <dlfcn.h>
+static JavaVM* g_rumbleVm = nullptr;
 static jclass g_mainActivityCls = nullptr;
 static jmethodID g_rumbleMid = nullptr;
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_xport_MainActivity_nativeInitRumble(JNIEnv* env, jclass clazz)
 {
+    if (env != nullptr && g_rumbleVm == nullptr) {
+        env->GetJavaVM(&g_rumbleVm);
+    }
     if (g_mainActivityCls == nullptr && clazz != nullptr) {
         g_mainActivityCls = (jclass)env->NewGlobalRef(clazz);
         g_rumbleMid = env->GetStaticMethodID(g_mainActivityCls, "setGamepadRumble", "(II)V");
@@ -700,34 +704,20 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
         return ERROR_DEVICE_NOT_CONNECTED;
 
 #ifdef __ANDROID__
-    if (vibration != nullptr && g_mainActivityCls != nullptr && g_rumbleMid != nullptr) {
+    if (vibration != nullptr && g_rumbleVm != nullptr && g_mainActivityCls != nullptr && g_rumbleMid != nullptr) {
         uint16_t left = ByteSwap(vibration->wLeftMotorSpeed);
         uint16_t right = ByteSwap(vibration->wRightMotorSpeed);
-
-        static JavaVM* g_vm = nullptr;
-        if (g_vm == nullptr) {
-            using GetVMsFn = jint(*)(JavaVM**, jsize, jsize*);
-            void* handle = dlopen("libnativehelper.so", RTLD_NOW);
-            if (handle) {
-                auto fn = reinterpret_cast<GetVMsFn>(dlsym(handle, "JNI_GetCreatedJavaVMs"));
-                jsize vm_count = 0;
-                if (fn) fn(&g_vm, 1, &vm_count);
+        JNIEnv* env = nullptr;
+        bool attached = false;
+        if (g_rumbleVm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_EDETACHED) {
+            if (g_rumbleVm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
+                attached = true;
             }
         }
-
-        if (g_vm != nullptr) {
-            JNIEnv* env = nullptr;
-            bool attached = false;
-            if (g_vm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_EDETACHED) {
-                if (g_vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
-                    attached = true;
-                }
-            }
-            if (env != nullptr) {
-                env->CallStaticVoidMethod(g_mainActivityCls, g_rumbleMid, (jint)left, (jint)right);
-                if (env->ExceptionCheck()) env->ExceptionClear();
-                if (attached) g_vm->DetachCurrentThread();
-            }
+        if (env != nullptr) {
+            env->CallStaticVoidMethod(g_mainActivityCls, g_rumbleMid, (jint)left, (jint)right);
+            if (env->ExceptionCheck()) env->ExceptionClear();
+            if (attached) g_rumbleVm->DetachCurrentThread();
         }
     }
 #endif
