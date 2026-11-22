@@ -62,7 +62,8 @@ public class MainActivity extends Activity {
     private static native void nativeSetFocus(boolean focus);
     private static void launcherVibrate(int leftMotor, int rightMotor) {
         int rawMax = Math.max(leftMotor, rightMotor);
-        int amp = (rawMax > 255) ? (rawMax >> 8) : rawMax;
+        int baseAmp = (rawMax > 255) ? (rawMax >> 8) : rawMax;
+        int amp = (baseAmp > 10) ? Math.min(255, Math.max(150, baseAmp * 2)) : 0;
         if (amp > 255) amp = 255;
         for (int id : android.view.InputDevice.getDeviceIds()) {
             android.view.InputDevice dev = android.view.InputDevice.getDevice(id);
@@ -92,7 +93,7 @@ public class MainActivity extends Activity {
             android.os.Vibrator sysVib = (android.os.Vibrator) instance.getSystemService(android.content.Context.VIBRATOR_SERVICE);
             if (sysVib != null && sysVib.hasVibrator()) {
                 if (amp <= 10) sysVib.cancel();
-                else sysVib.vibrate(android.os.VibrationEffect.createOneShot(140, Math.min(255, Math.max(40, amp))));
+                else sysVib.vibrate(android.os.VibrationEffect.createOneShot(280, Math.min(255, Math.max(40, amp))));
             }
         } catch (Throwable ignored) {}
     }
