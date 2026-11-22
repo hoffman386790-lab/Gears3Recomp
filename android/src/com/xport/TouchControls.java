@@ -145,8 +145,8 @@ public class TouchControls extends View {
             float nx = prefs.getFloat("btn_x_" + i, -1f);
             float ny = prefs.getFloat("btn_y_" + i, -1f);
             if (nx >= 0f && ny >= 0f) {
-                b.x = nx * width;
-                b.y = ny * height;
+                b.cx = nx * width;
+                b.cy = ny * height;
             }
         }
     }
@@ -157,15 +157,15 @@ public class TouchControls extends View {
         android.content.SharedPreferences.Editor ed = getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE).edit();
         for (int i = 0; i < buttons.size(); i++) {
             Button b = buttons.get(i);
-            ed.putFloat("btn_x_" + i, b.x / w);
-            ed.putFloat("btn_y_" + i, b.y / h);
+            ed.putFloat("btn_x_" + i, b.cx / w);
+            ed.putFloat("btn_y_" + i, b.cy / h);
         }
         ed.apply();
     }
 
     void resetCustomHud() {
         getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE).edit().clear().apply();
-        layout(getWidth(), getHeight());
+        onSizeChanged(getWidth(), getHeight(), getWidth(), getHeight());
     }
 
     void setListener(Listener listener) {
@@ -219,6 +219,10 @@ public class TouchControls extends View {
         rightStick.defaultX = 0.62f * width;
         rightStick.defaultY = 0.72f * height;
         text.setTextSize(13 * density * scale);
+        editToggleX = width * 0.50f;
+        editToggleY = height * 0.035f;
+        editToggleR = 20 * density;
+        loadCustomHud(width, height);
     }
 
     private static float clamp(float value) {
@@ -242,7 +246,6 @@ public class TouchControls extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (!visible) return false;
         int act = event.getActionMasked();
         float tx = event.getX(), ty = event.getY();
         if (act == MotionEvent.ACTION_DOWN) {
@@ -254,15 +257,15 @@ public class TouchControls extends View {
                 Button best = null;
                 float bestD = Float.MAX_VALUE;
                 for (Button b : buttons) {
-                    float d = (float) Math.hypot(tx - b.x, ty - b.y);
+                    float d = (float) Math.hypot(tx - b.cx, ty - b.cy);
                     if (d <= b.radius * 1.4f && d < bestD) { best = b; bestD = d; }
                 }
                 draggingBtn = best;
                 return true;
             }
         } else if (act == MotionEvent.ACTION_MOVE && editMode && draggingBtn != null) {
-            draggingBtn.x = Math.max(draggingBtn.radius, Math.min(getWidth() - draggingBtn.radius, tx));
-            draggingBtn.y = Math.max(draggingBtn.radius, Math.min(getHeight() - draggingBtn.radius, ty));
+            draggingBtn.cx = Math.max(draggingBtn.radius, Math.min(getWidth() - draggingBtn.radius, tx));
+            draggingBtn.cy = Math.max(draggingBtn.radius, Math.min(getHeight() - draggingBtn.radius, ty));
             invalidate();
             return true;
         } else if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) {
