@@ -254,6 +254,13 @@ public class TouchControls extends View {
                 return true;
             }
             if (editMode) {
+                float resetX = editToggleX + editToggleR * 2.5f;
+                if (Math.hypot(tx - resetX, ty - editToggleY) <= editToggleR * 1.25f) {
+                    resetCustomHud();
+                    editMode = false;
+                    invalidate();
+                    return true;
+                }
                 Button best = null;
                 float bestD = Float.MAX_VALUE;
                 for (Button b : buttons) {
@@ -388,40 +395,125 @@ public class TouchControls extends View {
     }
 
     private void drawStick(Canvas canvas, Stick stick) {
-        float baseX = stick.pointer >= 0 ? stick.originX : stick.defaultX;
-        float baseY = stick.pointer >= 0 ? stick.originY : stick.defaultY;
-        fill.setColor(Color.argb(stick.pointer >= 0 ? 60 : 30, 255, 255, 255));
-        canvas.drawCircle(baseX, baseY, stick.radius, fill);
-        stroke.setColor(Color.argb(110, 255, 255, 255));
-        canvas.drawCircle(baseX, baseY, stick.radius, stroke);
-        float knobX = baseX + stick.valueX() * stick.radius;
-        float knobY = baseY - stick.valueY() * stick.radius;
-        fill.setColor(Color.argb(stick.pointer >= 0 ? 150 : 70, 255, 255, 255));
-        canvas.drawCircle(knobX, knobY, stick.radius * 0.42f, fill);
+        boolean active = stick.pointer >= 0;
+        float baseX = active ? stick.originX : stick.defaultX;
+        float baseY = active ? stick.originY : stick.defaultY;
+        float r = stick.radius;
+
+        fill.setColor(Color.argb(active ? 50 : 24, 18, 22, 26));
+        canvas.drawCircle(baseX, baseY, r, fill);
+
+        float prevStroke = stroke.getStrokeWidth();
+        stroke.setStrokeWidth(1.5f * density);
+        stroke.setColor(Color.argb(active ? 195 : 105, 232, 236, 240));
+        canvas.drawCircle(baseX, baseY, r, stroke);
+
+        stroke.setStrokeWidth(0.9f * density);
+        stroke.setColor(Color.argb(active ? 120 : 55, 210, 218, 226));
+        canvas.drawCircle(baseX, baseY, r * 0.72f, stroke);
+
+        float tick = r * 0.14f;
+        canvas.drawLine(baseX - r, baseY, baseX - r + tick, baseY, stroke);
+        canvas.drawLine(baseX + r - tick, baseY, baseX + r, baseY, stroke);
+        canvas.drawLine(baseX, baseY - r, baseX, baseY - r + tick, stroke);
+        canvas.drawLine(baseX, baseY + r - tick, baseX, baseY + r, stroke);
+
+        float knobX = baseX + stick.valueX() * r;
+        float knobY = baseY - stick.valueY() * r;
+        float kr = r * 0.38f;
+        fill.setColor(Color.argb(active ? 135 : 62, 238, 242, 246));
+        canvas.drawCircle(knobX, knobY, kr, fill);
+        stroke.setStrokeWidth(1.4f * density);
+        stroke.setColor(Color.argb(active ? 235 : 130, 255, 255, 255));
+        canvas.drawCircle(knobX, knobY, kr, stroke);
+        stroke.setStrokeWidth(prevStroke);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         drawStick(canvas, leftStick);
-        fill.setColor(editMode ? 0xCC00CC66 : 0x66222222);
-        canvas.drawCircle(editToggleX, editToggleY, editToggleR, fill);
-        stroke.setColor(editMode ? 0xFFFFFFFF : 0x99CCCCCC);
-        canvas.drawCircle(editToggleX, editToggleY, editToggleR, stroke);
+        float prevStroke = stroke.getStrokeWidth();
+
+        // Boton HUD / OK cristal tactico
+        float pillW = editToggleR * 1.45f;
+        float pillH = editToggleR * 0.85f;
+        float pillRad = 8f * density;
+        fill.setColor(editMode ? 0x88334155 : 0x5512161C);
+        canvas.drawRoundRect(editToggleX - pillW, editToggleY - pillH, editToggleX + pillW, editToggleY + pillH, pillRad, pillRad, fill);
+        stroke.setStrokeWidth(1.4f * density);
+        stroke.setColor(editMode ? 0xFFFFFFFF : 0x99CBD5E1);
+        canvas.drawRoundRect(editToggleX - pillW, editToggleY - pillH, editToggleX + pillW, editToggleY + pillH, pillRad, pillRad, stroke);
         text.setColor(0xFFFFFFFF);
+        text.setFakeBoldText(true);
         text.setTextSize(9.5f * density);
         canvas.drawText(editMode ? "OK" : "HUD", editToggleX, editToggleY + 3.5f * density, text);
 
-        // Camara libre con el dedo en mitad derecha (sin circulo estorboso)
+        // Boton RESET al lado de OK en modo edicion
+        if (editMode) {
+            float resetX = editToggleX + editToggleR * 2.8f;
+            fill.setColor(0x881E293B);
+            canvas.drawRoundRect(resetX - pillW, editToggleY - pillH, resetX + pillW, editToggleY + pillH, pillRad, pillRad, fill);
+            stroke.setColor(0xE6F8FAFC);
+            canvas.drawRoundRect(resetX - pillW, editToggleY - pillH, resetX + pillW, editToggleY + pillH, pillRad, pillRad, stroke);
+            text.setTextSize(8.2f * density);
+            canvas.drawText("RESET", resetX, editToggleY + 3.0f * density, text);
+        }
+
+        // Botones cristal tactico transparente monocromatico
         for (Button button : buttons) {
             boolean pressed = button.pointer >= 0;
-            fill.setColor(Color.argb(pressed ? 170 : 55, Color.red(button.color),
-                    Color.green(button.color), Color.blue(button.color)));
-            canvas.drawCircle(button.cx, button.cy, button.radius, fill);
-            stroke.setColor(Color.argb(pressed ? 230 : 120, 255, 255, 255));
-            canvas.drawCircle(button.cx, button.cy, button.radius, stroke);
-            float size = (button.label.length() > 2 ? 9 : 13) * density * scale;
+            float r = button.radius * (pressed ? 0.93f : 1.0f);
+            boolean isShoulderOrMenu = button.label.length() >= 2; // LT, LB, RT, RB, START, BACK
+
+            if (isShoulderOrMenu) {
+                float hw = r * 1.18f;
+                float hh = r * 0.78f;
+                float corner = 9f * density;
+
+                fill.setColor(Color.argb(pressed ? 125 : 42, 18, 22, 28));
+                canvas.drawRoundRect(button.cx - hw, button.cy - hh, button.cx + hw, button.cy + hh, corner, corner, fill);
+
+                stroke.setStrokeWidth((pressed ? 2.0f : 1.4f) * density);
+                stroke.setColor(Color.argb(pressed ? 245 : 155, 232, 236, 240));
+                canvas.drawRoundRect(button.cx - hw, button.cy - hh, button.cx + hw, button.cy + hh, corner, corner, stroke);
+
+                float inset = 3.2f * density;
+                stroke.setStrokeWidth(0.8f * density);
+                stroke.setColor(Color.argb(pressed ? 170 : 65, 210, 218, 226));
+                canvas.drawRoundRect(button.cx - hw + inset, button.cy - hh + inset, button.cx + hw - inset, button.cy + hh - inset, corner * 0.75f, corner * 0.75f, stroke);
+
+                float tLen = 4f * density;
+                stroke.setStrokeWidth(1.2f * density);
+                stroke.setColor(Color.argb(pressed ? 235 : 130, 232, 236, 240));
+                canvas.drawLine(button.cx - hw - 2f * density, button.cy, button.cx - hw + tLen, button.cy, stroke);
+                canvas.drawLine(button.cx + hw - tLen, button.cy, button.cx + hw + 2f * density, button.cy, stroke);
+            } else {
+                // Circulares de doble aro transparente para A, B, X, Y
+                fill.setColor(Color.argb(pressed ? 125 : 42, 18, 22, 28));
+                canvas.drawCircle(button.cx, button.cy, r, fill);
+
+                stroke.setStrokeWidth((pressed ? 2.1f : 1.4f) * density);
+                stroke.setColor(Color.argb(pressed ? 245 : 155, 232, 236, 240));
+                canvas.drawCircle(button.cx, button.cy, r, stroke);
+
+                stroke.setStrokeWidth(0.85f * density);
+                stroke.setColor(Color.argb(pressed ? 175 : 70, 210, 218, 226));
+                canvas.drawCircle(button.cx, button.cy, r * 0.80f, stroke);
+
+                float tLen = r * 0.15f;
+                stroke.setStrokeWidth(1.2f * density);
+                stroke.setColor(Color.argb(pressed ? 235 : 130, 232, 236, 240));
+                canvas.drawLine(button.cx - r - 2f * density, button.cy, button.cx - r + tLen, button.cy, stroke);
+                canvas.drawLine(button.cx + r - tLen, button.cy, button.cx + r + 2f * density, button.cy, stroke);
+                canvas.drawLine(button.cx, button.cy - r - 2f * density, button.cx, button.cy - r + tLen, stroke);
+                canvas.drawLine(button.cx, button.cy + r - tLen, button.cx, button.cy + r + 2f * density, stroke);
+            }
+
+            float size = (button.label.length() > 2 ? 9.5f : 13.5f) * density * scale;
             text.setTextSize(size);
+            text.setColor(Color.argb(pressed ? 255 : 225, 244, 247, 250));
             canvas.drawText(button.label, button.cx, button.cy + size * 0.35f, text);
         }
+        stroke.setStrokeWidth(prevStroke);
     }
 }
