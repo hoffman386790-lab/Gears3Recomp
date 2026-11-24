@@ -462,6 +462,25 @@ void XamRegisterSaves()
         ++count;
     }
     LOGFN("saves: {} found in {}", count, os::paths::GetSavePath().string());
+
+    std::error_code dlc_ec;
+    const auto dlc_dir = os::paths::GetGamePath() / "dlc";
+    if (std::filesystem::exists(dlc_dir, dlc_ec))
+    {
+        uint32_t dlc_count = 0;
+        for (const auto& entry : std::filesystem::directory_iterator(dlc_dir, dlc_ec))
+        {
+            if (!entry.is_directory(dlc_ec))
+                continue;
+            const auto name = entry.path().filename().string();
+            if (name.empty() || name.size() >= XCONTENT_MAX_FILENAME)
+                continue;
+            XCONTENT_DATA data = XamMakeContent(2, name);
+            XamRegisterContent(data, (const char*)entry.path().u8string().c_str());
+            ++dlc_count;
+        }
+        LOGFN("dlc/skins: {} found in {}", dlc_count, dlc_dir.string());
+    }
 }
 
 static uint32_t FinishContentRequest(XXOVERLAPPED* overlapped, uint32_t result)
