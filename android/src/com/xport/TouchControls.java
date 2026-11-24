@@ -305,6 +305,11 @@ public class TouchControls extends View {
                 Button button = hitButton(x, y);
                 if (button != null && button.pointer < 0) {
                     button.pointer = pointer;
+                    if ((button.bits & RIGHT_TRIGGER) != 0 && rightStick.pointer < 0) {
+                        rightStick.pointer = pointer;
+                        rightStick.originX = rightStick.x = x;
+                        rightStick.originY = rightStick.y = y;
+                    }
                     if (haptics) {
                         performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
                     }
