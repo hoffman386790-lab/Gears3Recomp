@@ -28,7 +28,7 @@ public class TouchControls extends View {
     Button selectedEditBtn = null;
     int weaponIndex = 0;
     static final String[] WEAPON_NAMES = {"LANCER", "GNASHER", "PISTOLA", "GRANADA"};
-    static final int[] WEAPON_BITS = {DPAD_UP, DPAD_LEFT, DPAD_DOWN, DPAD_RIGHT};
+    final int[] WEAPON_BITS = {DPAD_UP, DPAD_LEFT, DPAD_DOWN, DPAD_RIGHT};
     float weaponSwipeStartY = 0f;
     boolean weaponSwiped = false;
     int pulseWeaponBit = 0;
