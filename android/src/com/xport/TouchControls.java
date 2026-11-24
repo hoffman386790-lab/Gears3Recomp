@@ -21,6 +21,10 @@ import java.util.ArrayList;
 //     (the phone is d-pad up), BACK and START at the top centre.
 // A finger that lands on a button keeps it pressed until it is lifted.
 public class TouchControls extends View {
+    boolean editMode = false;
+    Button draggingBtn = null;
+    float editToggleX, editToggleY, editToggleR;
+    long editDownTime = 0;
     // XAMINPUT_GAMEPAD_* bits.
     static final int DPAD_UP = 0x0001, DPAD_DOWN = 0x0002, DPAD_LEFT = 0x0004, DPAD_RIGHT = 0x0008;
     static final int START = 0x0010, BACK = 0x0020, LEFT_THUMB = 0x0040, RIGHT_THUMB = 0x0080;
@@ -109,23 +113,59 @@ public class TouchControls extends View {
         int blue = Color.rgb(70, 130, 240), yellow = Color.rgb(240, 200, 50);
         int gray = Color.rgb(200, 200, 200);
         // Positions as fractions of the view size, radii in dp.
-        buttons.add(new Button("A", A, 0.875f, 0.86f, 30, green));
-        buttons.add(new Button("B", B, 0.945f, 0.70f, 30, red));
-        buttons.add(new Button("X", X, 0.805f, 0.70f, 30, blue));
-        buttons.add(new Button("Y", Y, 0.875f, 0.54f, 30, yellow));
-        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.945f, 0.36f, 32, gray));
-        buttons.add(new Button("LT", LEFT_TRIGGER, 0.805f, 0.36f, 32, gray));
-        buttons.add(new Button("RB", RIGHT_SHOULDER, 0.945f, 0.13f, 26, gray));
-        buttons.add(new Button("R3", RIGHT_THUMB, 0.805f, 0.13f, 22, gray));
-        buttons.add(new Button("LB", LEFT_SHOULDER, 0.055f, 0.13f, 26, gray));
-        buttons.add(new Button("L3", LEFT_THUMB, 0.17f, 0.13f, 22, gray));
-        buttons.add(new Button("BACK", BACK, 0.43f, 0.07f, 22, gray));
-        buttons.add(new Button("START", START, 0.57f, 0.07f, 22, gray));
-        buttons.add(new Button("▲", DPAD_UP, 0.055f, 0.31f, 18, gray));
-        buttons.add(new Button("▼", DPAD_DOWN, 0.055f, 0.53f, 18, gray));
-        buttons.add(new Button("◀", DPAD_LEFT, 0.020f, 0.42f, 18, gray));
-        buttons.add(new Button("▶", DPAD_RIGHT, 0.090f, 0.42f, 18, gray));
+        // Layout ergonomico estilo shooter movil con camara libre en mitad derecha
+        buttons.add(new Button("A", A, 0.89f, 0.84f, 35, green));
+        buttons.add(new Button("B", B, 0.78f, 0.85f, 30, red));
+        buttons.add(new Button("X", X, 0.80f, 0.65f, 29, blue));
+        buttons.add(new Button("Y", Y, 0.72f, 0.49f, 26, yellow));
+        buttons.add(new Button("RB", RIGHT_SHOULDER, 0.93f, 0.62f, 28, gray));
+        buttons.add(new Button("LT", LEFT_TRIGGER, 0.70f, 0.71f, 32, gray));
+        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.93f, 0.37f, 34, red));
+        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.08f, 0.22f, 34, red));
+        buttons.add(new Button("R3", RIGHT_THUMB, 0.82f, 0.14f, 22, gray));
+        buttons.add(new Button("LB", LEFT_SHOULDER, 0.20f, 0.14f, 24, gray));
+        buttons.add(new Button("L3", LEFT_THUMB, 0.31f, 0.14f, 22, gray));
+        buttons.add(new Button("BACK", BACK, 0.44f, 0.08f, 21, gray));
+        buttons.add(new Button("START", START, 0.56f, 0.08f, 21, gray));
+        buttons.add(new Button("▲", DPAD_UP, 0.06f, 0.42f, 19, gray));
+        buttons.add(new Button("▼", DPAD_DOWN, 0.06f, 0.60f, 19, gray));
+        buttons.add(new Button("◄", DPAD_LEFT, 0.025f, 0.51f, 19, gray));
+        buttons.add(new Button("►", DPAD_RIGHT, 0.095f, 0.51f, 19, gray));
         rightStick.follow = true;
+        editToggleX = getWidth() * 0.50f;
+        editToggleY = getHeight() * 0.035f;
+        editToggleR = 20 * density;
+        loadCustomHud(getWidth(), getHeight());
+    }
+
+    void loadCustomHud(int width, int height) {
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE);
+        for (int i = 0; i < buttons.size(); i++) {
+            Button b = buttons.get(i);
+            float nx = prefs.getFloat("btn_x_" + i, -1f);
+            float ny = prefs.getFloat("btn_y_" + i, -1f);
+            if (nx >= 0f && ny >= 0f) {
+                b.cx = nx * width;
+                b.cy = ny * height;
+            }
+        }
+    }
+
+    void saveCustomHud() {
+        int w = getWidth(), h = getHeight();
+        if (w <= 0 || h <= 0) return;
+        android.content.SharedPreferences.Editor ed = getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE).edit();
+        for (int i = 0; i < buttons.size(); i++) {
+            Button b = buttons.get(i);
+            ed.putFloat("btn_x_" + i, b.cx / w);
+            ed.putFloat("btn_y_" + i, b.cy / h);
+        }
+        ed.apply();
+    }
+
+    void resetCustomHud() {
+        getContext().getSharedPreferences("gears3_hud", android.content.Context.MODE_PRIVATE).edit().clear().apply();
+        onSizeChanged(getWidth(), getHeight(), getWidth(), getHeight());
     }
 
     void setListener(Listener listener) {
@@ -173,12 +213,16 @@ public class TouchControls extends View {
             button.radius = button.radiusDp * density * scale;
         }
         leftStick.radius = 64 * density * scale;
-        leftStick.defaultX = 0.17f * width;
-        leftStick.defaultY = 0.72f * height;
-        rightStick.radius = 48 * density * scale;
+        leftStick.defaultX = 0.18f * width;
+        leftStick.defaultY = 0.77f * height;
+        rightStick.radius = 32 * density * scale;
         rightStick.defaultX = 0.62f * width;
         rightStick.defaultY = 0.72f * height;
         text.setTextSize(13 * density * scale);
+        editToggleX = getWidth() * 0.50f;
+        editToggleY = getHeight() * 0.035f;
+        editToggleR = 20 * density;
+        loadCustomHud(getWidth(), getHeight());
     }
 
     private static float clamp(float value) {
@@ -202,6 +246,55 @@ public class TouchControls extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        int act = event.getActionMasked();
+        float tx = event.getX(), ty = event.getY();
+        if (act == MotionEvent.ACTION_DOWN) {
+            if (Math.hypot(tx - editToggleX, ty - editToggleY) <= editToggleR * 1.35f) {
+                editDownTime = System.currentTimeMillis();
+                return true;
+            }
+            if (editMode) {
+                float resetX = editToggleX + editToggleR * 2.5f;
+                if (Math.hypot(tx - resetX, ty - editToggleY) <= editToggleR * 1.25f) {
+                    resetCustomHud();
+                    editMode = false;
+                    invalidate();
+                    return true;
+                }
+                Button best = null;
+                float bestD = Float.MAX_VALUE;
+                for (Button b : buttons) {
+                    float d = (float) Math.hypot(tx - b.cx, ty - b.cy);
+                    if (d <= b.radius * 1.4f && d < bestD) { best = b; bestD = d; }
+                }
+                draggingBtn = best;
+                return true;
+            }
+        } else if (act == MotionEvent.ACTION_MOVE && editMode && draggingBtn != null) {
+            draggingBtn.cx = Math.max(draggingBtn.radius, Math.min(getWidth() - draggingBtn.radius, tx));
+            draggingBtn.cy = Math.max(draggingBtn.radius, Math.min(getHeight() - draggingBtn.radius, ty));
+            invalidate();
+            return true;
+        } else if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) {
+            if (editDownTime > 0) {
+                long held = System.currentTimeMillis() - editDownTime;
+                editDownTime = 0;
+                if (held >= 900) {
+                    editMode = false;
+                    resetCustomHud();
+                } else {
+                    editMode = !editMode;
+                    if (!editMode) saveCustomHud();
+                }
+                invalidate();
+                return true;
+            }
+            if (editMode) {
+                draggingBtn = null;
+                return true;
+            }
+        }
+        if (editMode) return true;
         int action = event.getActionMasked();
         int index = event.getActionIndex();
         switch (action) {
@@ -302,32 +395,125 @@ public class TouchControls extends View {
     }
 
     private void drawStick(Canvas canvas, Stick stick) {
-        float baseX = stick.pointer >= 0 ? stick.originX : stick.defaultX;
-        float baseY = stick.pointer >= 0 ? stick.originY : stick.defaultY;
-        fill.setColor(Color.argb(stick.pointer >= 0 ? 60 : 30, 255, 255, 255));
-        canvas.drawCircle(baseX, baseY, stick.radius, fill);
-        stroke.setColor(Color.argb(110, 255, 255, 255));
-        canvas.drawCircle(baseX, baseY, stick.radius, stroke);
-        float knobX = baseX + stick.valueX() * stick.radius;
-        float knobY = baseY - stick.valueY() * stick.radius;
-        fill.setColor(Color.argb(stick.pointer >= 0 ? 150 : 70, 255, 255, 255));
-        canvas.drawCircle(knobX, knobY, stick.radius * 0.42f, fill);
+        boolean active = stick.pointer >= 0;
+        float baseX = active ? stick.originX : stick.defaultX;
+        float baseY = active ? stick.originY : stick.defaultY;
+        float r = stick.radius;
+
+        fill.setColor(Color.argb(active ? 50 : 24, 18, 22, 26));
+        canvas.drawCircle(baseX, baseY, r, fill);
+
+        float prevStroke = stroke.getStrokeWidth();
+        stroke.setStrokeWidth(1.5f * density);
+        stroke.setColor(Color.argb(active ? 195 : 105, 232, 236, 240));
+        canvas.drawCircle(baseX, baseY, r, stroke);
+
+        stroke.setStrokeWidth(0.9f * density);
+        stroke.setColor(Color.argb(active ? 120 : 55, 210, 218, 226));
+        canvas.drawCircle(baseX, baseY, r * 0.72f, stroke);
+
+        float tick = r * 0.14f;
+        canvas.drawLine(baseX - r, baseY, baseX - r + tick, baseY, stroke);
+        canvas.drawLine(baseX + r - tick, baseY, baseX + r, baseY, stroke);
+        canvas.drawLine(baseX, baseY - r, baseX, baseY - r + tick, stroke);
+        canvas.drawLine(baseX, baseY + r - tick, baseX, baseY + r, stroke);
+
+        float knobX = baseX + stick.valueX() * r;
+        float knobY = baseY - stick.valueY() * r;
+        float kr = r * 0.38f;
+        fill.setColor(Color.argb(active ? 135 : 62, 238, 242, 246));
+        canvas.drawCircle(knobX, knobY, kr, fill);
+        stroke.setStrokeWidth(1.4f * density);
+        stroke.setColor(Color.argb(active ? 235 : 130, 255, 255, 255));
+        canvas.drawCircle(knobX, knobY, kr, stroke);
+        stroke.setStrokeWidth(prevStroke);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         drawStick(canvas, leftStick);
-        drawStick(canvas, rightStick);
+        float prevStroke = stroke.getStrokeWidth();
+
+        // Boton HUD / OK cristal tactico
+        float pillW = editToggleR * 1.45f;
+        float pillH = editToggleR * 0.85f;
+        float pillRad = 8f * density;
+        fill.setColor(editMode ? 0x88334155 : 0x5512161C);
+        canvas.drawRoundRect(editToggleX - pillW, editToggleY - pillH, editToggleX + pillW, editToggleY + pillH, pillRad, pillRad, fill);
+        stroke.setStrokeWidth(1.4f * density);
+        stroke.setColor(editMode ? 0xFFFFFFFF : 0x99CBD5E1);
+        canvas.drawRoundRect(editToggleX - pillW, editToggleY - pillH, editToggleX + pillW, editToggleY + pillH, pillRad, pillRad, stroke);
+        text.setColor(0xFFFFFFFF);
+        text.setFakeBoldText(true);
+        text.setTextSize(9.5f * density);
+        canvas.drawText(editMode ? "OK" : "HUD", editToggleX, editToggleY + 3.5f * density, text);
+
+        // Boton RESET al lado de OK en modo edicion
+        if (editMode) {
+            float resetX = editToggleX + editToggleR * 2.8f;
+            fill.setColor(0x881E293B);
+            canvas.drawRoundRect(resetX - pillW, editToggleY - pillH, resetX + pillW, editToggleY + pillH, pillRad, pillRad, fill);
+            stroke.setColor(0xE6F8FAFC);
+            canvas.drawRoundRect(resetX - pillW, editToggleY - pillH, resetX + pillW, editToggleY + pillH, pillRad, pillRad, stroke);
+            text.setTextSize(8.2f * density);
+            canvas.drawText("RESET", resetX, editToggleY + 3.0f * density, text);
+        }
+
+        // Botones cristal tactico transparente monocromatico
         for (Button button : buttons) {
             boolean pressed = button.pointer >= 0;
-            fill.setColor(Color.argb(pressed ? 170 : 55, Color.red(button.color),
-                    Color.green(button.color), Color.blue(button.color)));
-            canvas.drawCircle(button.cx, button.cy, button.radius, fill);
-            stroke.setColor(Color.argb(pressed ? 230 : 120, 255, 255, 255));
-            canvas.drawCircle(button.cx, button.cy, button.radius, stroke);
-            float size = (button.label.length() > 2 ? 9 : 13) * density * scale;
+            float r = button.radius * (pressed ? 0.93f : 1.0f);
+            boolean isShoulderOrMenu = button.label.length() >= 2; // LT, LB, RT, RB, START, BACK
+
+            if (isShoulderOrMenu) {
+                float hw = r * 1.18f;
+                float hh = r * 0.78f;
+                float corner = 9f * density;
+
+                fill.setColor(Color.argb(pressed ? 125 : 42, 18, 22, 28));
+                canvas.drawRoundRect(button.cx - hw, button.cy - hh, button.cx + hw, button.cy + hh, corner, corner, fill);
+
+                stroke.setStrokeWidth((pressed ? 2.0f : 1.4f) * density);
+                stroke.setColor(Color.argb(pressed ? 245 : 155, 232, 236, 240));
+                canvas.drawRoundRect(button.cx - hw, button.cy - hh, button.cx + hw, button.cy + hh, corner, corner, stroke);
+
+                float inset = 3.2f * density;
+                stroke.setStrokeWidth(0.8f * density);
+                stroke.setColor(Color.argb(pressed ? 170 : 65, 210, 218, 226));
+                canvas.drawRoundRect(button.cx - hw + inset, button.cy - hh + inset, button.cx + hw - inset, button.cy + hh - inset, corner * 0.75f, corner * 0.75f, stroke);
+
+                float tLen = 4f * density;
+                stroke.setStrokeWidth(1.2f * density);
+                stroke.setColor(Color.argb(pressed ? 235 : 130, 232, 236, 240));
+                canvas.drawLine(button.cx - hw - 2f * density, button.cy, button.cx - hw + tLen, button.cy, stroke);
+                canvas.drawLine(button.cx + hw - tLen, button.cy, button.cx + hw + 2f * density, button.cy, stroke);
+            } else {
+                // Circulares de doble aro transparente para A, B, X, Y
+                fill.setColor(Color.argb(pressed ? 125 : 42, 18, 22, 28));
+                canvas.drawCircle(button.cx, button.cy, r, fill);
+
+                stroke.setStrokeWidth((pressed ? 2.1f : 1.4f) * density);
+                stroke.setColor(Color.argb(pressed ? 245 : 155, 232, 236, 240));
+                canvas.drawCircle(button.cx, button.cy, r, stroke);
+
+                stroke.setStrokeWidth(0.85f * density);
+                stroke.setColor(Color.argb(pressed ? 175 : 70, 210, 218, 226));
+                canvas.drawCircle(button.cx, button.cy, r * 0.80f, stroke);
+
+                float tLen = r * 0.15f;
+                stroke.setStrokeWidth(1.2f * density);
+                stroke.setColor(Color.argb(pressed ? 235 : 130, 232, 236, 240));
+                canvas.drawLine(button.cx - r - 2f * density, button.cy, button.cx - r + tLen, button.cy, stroke);
+                canvas.drawLine(button.cx + r - tLen, button.cy, button.cx + r + 2f * density, button.cy, stroke);
+                canvas.drawLine(button.cx, button.cy - r - 2f * density, button.cx, button.cy - r + tLen, stroke);
+                canvas.drawLine(button.cx, button.cy + r - tLen, button.cx, button.cy + r + 2f * density, stroke);
+            }
+
+            float size = (button.label.length() > 2 ? 9.5f : 13.5f) * density * scale;
             text.setTextSize(size);
+            text.setColor(Color.argb(pressed ? 255 : 225, 244, 247, 250));
             canvas.drawText(button.label, button.cx, button.cy + size * 0.35f, text);
         }
+        stroke.setStrokeWidth(prevStroke);
     }
 }
