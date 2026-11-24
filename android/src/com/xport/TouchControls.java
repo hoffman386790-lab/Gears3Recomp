@@ -25,6 +25,17 @@ public class TouchControls extends View {
     Button draggingBtn = null;
     float editToggleX, editToggleY, editToggleR;
     long editDownTime = 0;
+    Button selectedEditBtn = null;
+    int weaponIndex = 0;
+    static final String[] WEAPON_NAMES = {"LANCER", "GNASHER", "PISTOLA", "GRANADA"};
+    static final int[] WEAPON_BITS = {DPAD_UP, DPAD_LEFT, DPAD_DOWN, DPAD_RIGHT};
+    float weaponSwipeStartY = 0f;
+    boolean weaponSwiped = false;
+    int pulseWeaponBit = 0;
+    long pulseWeaponUntil = 0L;
+    long weaponNeonStart = 0L;
+    final android.graphics.Path weaponPath = new android.graphics.Path();
+    final android.graphics.Paint neonPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
     // XAMINPUT_GAMEPAD_* bits.
     static final int DPAD_UP = 0x0001, DPAD_DOWN = 0x0002, DPAD_LEFT = 0x0004, DPAD_RIGHT = 0x0008;
     static final int START = 0x0010, BACK = 0x0020, LEFT_THUMB = 0x0040, RIGHT_THUMB = 0x0080;
@@ -38,8 +49,8 @@ public class TouchControls extends View {
     }
 
     private static final class Button {
-        final String label;
-        final int bits;
+        String label;
+        int bits;
         final float fx, fy, radiusDp;
         final int color;
         float cx, cy, radius;
@@ -114,23 +125,20 @@ public class TouchControls extends View {
         int gray = Color.rgb(200, 200, 200);
         // Positions as fractions of the view size, radii in dp.
         // Layout ergonomico estilo shooter movil con camara libre en mitad derecha
-        buttons.add(new Button("A", A, 0.89f, 0.84f, 35, green));
-        buttons.add(new Button("B", B, 0.78f, 0.85f, 30, red));
-        buttons.add(new Button("X", X, 0.80f, 0.65f, 29, blue));
-        buttons.add(new Button("Y", Y, 0.72f, 0.49f, 26, yellow));
-        buttons.add(new Button("RB", RIGHT_SHOULDER, 0.93f, 0.62f, 28, gray));
-        buttons.add(new Button("LT", LEFT_TRIGGER, 0.70f, 0.71f, 32, gray));
-        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.93f, 0.37f, 34, red));
-        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.08f, 0.22f, 34, red));
-        buttons.add(new Button("R3", RIGHT_THUMB, 0.82f, 0.14f, 22, gray));
+        buttons.add(new Button("A", A, 0.88f, 0.82f, 38, green));
+        buttons.add(new Button("B", B, 0.77f, 0.85f, 30, red));
+        buttons.add(new Button("X", X, 0.79f, 0.66f, 29, blue));
+        buttons.add(new Button("Y", Y, 0.71f, 0.51f, 25, yellow));
+        buttons.add(new Button("LT", LEFT_TRIGGER, 0.88f, 0.57f, 34, gray));
+        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.76f, 0.43f, 33, red));
+        buttons.add(new Button("RT", RIGHT_TRIGGER, 0.09f, 0.24f, 35, red));
+        buttons.add(new Button("RB", RIGHT_SHOULDER, 0.93f, 0.36f, 26, gray));
         buttons.add(new Button("LB", LEFT_SHOULDER, 0.20f, 0.14f, 24, gray));
+        buttons.add(new Button("R3", RIGHT_THUMB, 0.82f, 0.14f, 22, gray));
         buttons.add(new Button("L3", LEFT_THUMB, 0.31f, 0.14f, 22, gray));
-        buttons.add(new Button("BACK", BACK, 0.44f, 0.08f, 21, gray));
-        buttons.add(new Button("START", START, 0.56f, 0.08f, 21, gray));
-        buttons.add(new Button("▲", DPAD_UP, 0.06f, 0.42f, 19, gray));
-        buttons.add(new Button("▼", DPAD_DOWN, 0.06f, 0.60f, 19, gray));
-        buttons.add(new Button("◄", DPAD_LEFT, 0.025f, 0.51f, 19, gray));
-        buttons.add(new Button("►", DPAD_RIGHT, 0.095f, 0.51f, 19, gray));
+        buttons.add(new Button("BACK", BACK, 0.44f, 0.08f, 20, gray));
+        buttons.add(new Button("START", START, 0.56f, 0.08f, 20, gray));
+        buttons.add(new Button("LANCER", DPAD_UP, 0.54f, 0.88f, 36, gray));
         rightStick.follow = true;
         editToggleX = getWidth() * 0.50f;
         editToggleY = getHeight() * 0.035f;
@@ -159,6 +167,7 @@ public class TouchControls extends View {
             Button b = buttons.get(i);
             ed.putFloat("btn_x_" + i, b.cx / w);
             ed.putFloat("btn_y_" + i, b.cy / h);
+            ed.putFloat("btn_r_" + i, b.radius);
         }
         ed.apply();
     }
@@ -254,20 +263,26 @@ public class TouchControls extends View {
                 return true;
             }
             if (editMode) {
-                float resetX = editToggleX + editToggleR * 2.5f;
-                if (Math.hypot(tx - resetX, ty - editToggleY) <= editToggleR * 1.25f) {
-                    resetCustomHud();
-                    editMode = false;
-                    invalidate();
-                    return true;
+                float resetX = editToggleX + editToggleR * 2.8f;
+                float minusX = editToggleX + editToggleR * 5.6f;
+                float plusX  = editToggleX + editToggleR * 8.1f;
+                if (Math.hypot(tx - resetX, ty - editToggleY) <= editToggleR * 1.35f) {
+                    resetCustomHud(); selectedEditBtn = null; editMode = false; invalidate(); return true;
                 }
-                Button best = null;
-                float bestD = Float.MAX_VALUE;
+                if (selectedEditBtn != null && Math.hypot(tx - minusX, ty - editToggleY) <= editToggleR * 1.25f) {
+                    selectedEditBtn.radius = Math.max(14f * density, selectedEditBtn.radius - 3f * density); invalidate(); return true;
+                }
+                if (selectedEditBtn != null && Math.hypot(tx - plusX, ty - editToggleY) <= editToggleR * 1.25f) {
+                    selectedEditBtn.radius = Math.min(72f * density, selectedEditBtn.radius + 3f * density); invalidate(); return true;
+                }
+                Button best = null; float bestD = Float.MAX_VALUE;
                 for (Button b : buttons) {
                     float d = (float) Math.hypot(tx - b.cx, ty - b.cy);
                     if (d <= b.radius * 1.4f && d < bestD) { best = b; bestD = d; }
                 }
                 draggingBtn = best;
+                if (best != null) selectedEditBtn = best;
+                invalidate();
                 return true;
             }
         } else if (act == MotionEvent.ACTION_MOVE && editMode && draggingBtn != null) {
@@ -305,7 +320,7 @@ public class TouchControls extends View {
                 Button button = hitButton(x, y);
                 if (button != null && button.pointer < 0) {
                     button.pointer = pointer;
-                    if ((button.bits & RIGHT_TRIGGER) != 0 && rightStick.pointer < 0) {
+                    if (((button.bits & RIGHT_TRIGGER) != 0 || (button.bits & LEFT_TRIGGER) != 0) && rightStick.pointer < 0) {
                         rightStick.pointer = pointer;
                         rightStick.originX = rightStick.x = x;
                         rightStick.originY = rightStick.y = y;
@@ -326,6 +341,19 @@ public class TouchControls extends View {
             case MotionEvent.ACTION_MOVE:
                 for (int i = 0; i < event.getPointerCount(); ++i) {
                     int pointer = event.getPointerId(i);
+                    for (Button b : buttons) {
+                        if (b.pointer == pointer && isWeaponBtn(b)) {
+                            float dyW = event.getY(i) - weaponSwipeStartY;
+                            if (Math.abs(dyW) > 16f * density) {
+                                weaponIndex = (weaponIndex + (dyW < 0 ? 1 : -1) + 4) % 4;
+                                b.label = WEAPON_NAMES[weaponIndex]; b.bits = WEAPON_BITS[weaponIndex];
+                                pulseWeaponBit = b.bits; long nowMs = android.os.SystemClock.uptimeMillis();
+                                pulseWeaponUntil = nowMs + 120L; weaponNeonStart = nowMs;
+                                weaponSwipeStartY = event.getY(i); weaponSwiped = true;
+                                if (haptics) performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+                            }
+                        }
+                    }
                     for (Stick stick : new Stick[] {leftStick, rightStick}) {
                         if (stick.pointer != pointer) {
                             continue;
@@ -351,11 +379,17 @@ public class TouchControls extends View {
                         continue;
                     }
                     int pointer = event.getPointerId(i);
-                    for (Button button : buttons) {
-                        if (button.pointer == pointer) {
-                            button.pointer = -1;
+                for (Button button : buttons) {
+                    if (button.pointer == pointer) {
+                        if (!weaponSwiped && isWeaponBtn(button)) {
+                            weaponIndex = (weaponIndex == 0) ? 1 : 0;
+                            button.label = WEAPON_NAMES[weaponIndex]; button.bits = WEAPON_BITS[weaponIndex];
+                            pulseWeaponBit = button.bits; long nowMs = android.os.SystemClock.uptimeMillis();
+                            pulseWeaponUntil = nowMs + 120L; weaponNeonStart = nowMs;
                         }
+                        button.pointer = -1;
                     }
+                }
                     if (leftStick.pointer == pointer) {
                         leftStick.pointer = -1;
                     }
@@ -379,6 +413,7 @@ public class TouchControls extends View {
                 bits |= button.bits;
             }
         }
+        if (pulseWeaponBit != 0 && android.os.SystemClock.uptimeMillis() < pulseWeaponUntil) bits |= pulseWeaponBit;
         int lx = Math.round(leftStick.valueX() * 32767), ly = Math.round(leftStick.valueY() * 32767);
         int rx = Math.round(rightStick.valueX() * 32767), ry = Math.round(rightStick.valueY() * 32767);
         boolean changed = bits != lastButtons || lx != lastLX || ly != lastLY || rx != lastRX
@@ -436,7 +471,7 @@ public class TouchControls extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        drawStick(canvas, leftStick);
+        // invisible LS
         float prevStroke = stroke.getStrokeWidth();
 
         // Boton HUD / OK cristal tactico
@@ -462,6 +497,18 @@ public class TouchControls extends View {
             canvas.drawRoundRect(resetX - pillW, editToggleY - pillH, resetX + pillW, editToggleY + pillH, pillRad, pillRad, stroke);
             text.setTextSize(8.2f * density);
             canvas.drawText("RESET", resetX, editToggleY + 3.0f * density, text);
+            if (selectedEditBtn != null) {
+                float minusX = editToggleX + editToggleR * 5.6f, plusX = editToggleX + editToggleR * 8.1f, btnW = editToggleR * 1.15f;
+                fill.setColor(0x881E293B); stroke.setColor(0xE6F8FAFC); text.setTextSize(12f * density);
+                canvas.drawRoundRect(minusX - btnW, editToggleY - pillH, minusX + btnW, editToggleY + pillH, pillRad, pillRad, fill);
+                canvas.drawRoundRect(minusX - btnW, editToggleY - pillH, minusX + btnW, editToggleY + pillH, pillRad, pillRad, stroke);
+                canvas.drawText("-", minusX, editToggleY + 4.0f * density, text);
+                canvas.drawRoundRect(plusX - btnW, editToggleY - pillH, plusX + btnW, editToggleY + pillH, pillRad, pillRad, fill);
+                canvas.drawRoundRect(plusX - btnW, editToggleY - pillH, plusX + btnW, editToggleY + pillH, pillRad, pillRad, stroke);
+                canvas.drawText("+", plusX, editToggleY + 4.0f * density, text);
+                stroke.setColor(0xFF38BDF8);
+                canvas.drawCircle(selectedEditBtn.cx, selectedEditBtn.cy, selectedEditBtn.radius + 4f * density, stroke);
+            }
         }
 
         // Botones cristal tactico transparente monocromatico
@@ -514,11 +561,72 @@ public class TouchControls extends View {
                 canvas.drawLine(button.cx, button.cy + r - tLen, button.cx, button.cy + r + 2f * density, stroke);
             }
 
+            if (isWeaponBtn(button)) { drawGearsWeaponIcon(canvas, button, r, pressed); } else {
             float size = (button.label.length() > 2 ? 9.5f : 13.5f) * density * scale;
             text.setTextSize(size);
             text.setColor(Color.argb(pressed ? 255 : 225, 244, 247, 250));
             canvas.drawText(button.label, button.cx, button.cy + size * 0.35f, text);
+            }
         }
         stroke.setStrokeWidth(prevStroke);
     }
+
+    private boolean isWeaponBtn(Button b) {
+        return "LANCER".equals(b.label) || "GNASHER".equals(b.label) || "PISTOLA".equals(b.label) || "GRANADA".equals(b.label);
+    }
+    private void drawGearsWeaponIcon(Canvas canvas, Button b, float r, boolean pressed) {
+        long elapsed = android.os.SystemClock.uptimeMillis() - weaponNeonStart;
+        boolean neonActive = weaponNeonStart > 0 && elapsed >= 0 && elapsed < 380L;
+        float t = neonActive ? (1.0f - (elapsed / 380.0f)) : 0f;
+        float wr = r * (1.0f + 0.14f * (float) Math.sin(t * Math.PI));
+        float cx = b.cx, cy = b.cy - r * 0.14f;
+        boolean isPrimary = "LANCER".equals(b.label) || "GNASHER".equals(b.label);
+        int neonOuter = isPrimary ? Color.rgb(255, 85, 0) : Color.rgb(0, 229, 255);
+        int neonCore  = isPrimary ? Color.rgb(255, 214, 102) : Color.rgb(186, 230, 253);
+        if (neonActive) {
+            neonPaint.setStyle(android.graphics.Paint.Style.STROKE);
+            neonPaint.setStrokeWidth((2.5f + 3.0f * t) * density);
+            neonPaint.setColor(Color.argb((int) (220 * t), Color.red(neonOuter), Color.green(neonOuter), Color.blue(neonOuter)));
+            float hw = r * 1.18f + (5f * density * (1f - t)), hh = r * 0.78f + (5f * density * (1f - t));
+            canvas.drawRoundRect(b.cx - hw, b.cy - hh, b.cx + hw, b.cy + hh, 9f * density, 9f * density, neonPaint);
+            postInvalidateOnAnimation();
+        }
+        weaponPath.reset();
+        if ("LANCER".equals(b.label)) {
+            weaponPath.moveTo(cx - wr * 0.85f, cy + wr * 0.12f); weaponPath.lineTo(cx - wr * 0.55f, cy - wr * 0.12f);
+            weaponPath.lineTo(cx + wr * 0.78f, cy - wr * 0.12f); weaponPath.lineTo(cx + wr * 0.78f, cy + wr * 0.02f);
+            weaponPath.lineTo(cx + wr * 0.58f, cy + wr * 0.02f); weaponPath.lineTo(cx + wr * 0.52f, cy + wr * 0.24f);
+            weaponPath.lineTo(cx - wr * 0.05f, cy + wr * 0.24f); weaponPath.lineTo(cx - wr * 0.12f, cy + wr * 0.08f);
+            weaponPath.lineTo(cx - wr * 0.32f, cy + wr * 0.26f); weaponPath.lineTo(cx - wr * 0.44f, cy + wr * 0.26f);
+            weaponPath.lineTo(cx - wr * 0.36f, cy + wr * 0.06f); weaponPath.lineTo(cx - wr * 0.85f, cy + wr * 0.22f);
+            weaponPath.close();
+        } else if ("GNASHER".equals(b.label)) {
+            weaponPath.moveTo(cx - wr * 0.78f, cy + wr * 0.18f); weaponPath.lineTo(cx - wr * 0.42f, cy - wr * 0.10f);
+            weaponPath.lineTo(cx + wr * 0.75f, cy - wr * 0.10f); weaponPath.lineTo(cx + wr * 0.75f, cy + wr * 0.04f);
+            weaponPath.lineTo(cx + wr * 0.22f, cy + wr * 0.04f); weaponPath.lineTo(cx + wr * 0.22f, cy + wr * 0.14f);
+            weaponPath.lineTo(cx - wr * 0.28f, cy + wr * 0.14f); weaponPath.lineTo(cx - wr * 0.65f, cy + wr * 0.28f);
+            weaponPath.close();
+        } else if ("PISTOLA".equals(b.label)) {
+            weaponPath.moveTo(cx - wr * 0.38f, cy + wr * 0.28f); weaponPath.lineTo(cx - wr * 0.26f, cy - wr * 0.14f);
+            weaponPath.lineTo(cx + wr * 0.45f, cy - wr * 0.14f); weaponPath.lineTo(cx + wr * 0.45f, cy + wr * 0.04f);
+            weaponPath.lineTo(cx - wr * 0.04f, cy + wr * 0.04f); weaponPath.lineTo(cx - wr * 0.14f, cy + wr * 0.28f);
+            weaponPath.close();
+        } else {
+            weaponPath.addOval(cx - wr * 0.24f, cy - wr * 0.14f, cx + wr * 0.24f, cy + wr * 0.28f, android.graphics.Path.Direction.CW);
+            weaponPath.addRect(cx - wr * 0.10f, cy - wr * 0.26f, cx + wr * 0.10f, cy - wr * 0.14f, android.graphics.Path.Direction.CW);
+        }
+        neonPaint.setStyle(android.graphics.Paint.Style.STROKE);
+        neonPaint.setStrokeWidth((neonActive ? 4.2f * t + 1.8f : 1.6f) * density);
+        neonPaint.setColor(Color.argb(neonActive ? (int) (180 + 75 * t) : 110, Color.red(neonOuter), Color.green(neonOuter), Color.blue(neonOuter)));
+        canvas.drawPath(weaponPath, neonPaint);
+        fill.setColor(neonActive ? neonCore : Color.argb(pressed ? 255 : 235, 244, 247, 250));
+        canvas.drawPath(weaponPath, fill);
+        neonPaint.setStrokeWidth(1.2f * density);
+        neonPaint.setColor(neonActive ? neonOuter : Color.argb(190, Color.red(neonCore), Color.green(neonCore), Color.blue(neonCore)));
+        canvas.drawPath(weaponPath, neonPaint);
+        text.setColor(neonActive ? neonCore : Color.argb(pressed ? 255 : 230, 244, 247, 250));
+        text.setTextSize(7.5f * density * scale);
+        canvas.drawText("▲ " + b.label + " ▼", b.cx, b.cy + r * 0.56f, text);
+    }
+
 }
