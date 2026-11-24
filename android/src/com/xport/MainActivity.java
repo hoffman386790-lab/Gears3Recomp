@@ -561,7 +561,7 @@ public class MainActivity extends Activity {
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         v.vibrate(VibrationEffect.createOneShot(180, maxAmp),
-                                new VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_GAME).build());
+                                new VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_MEDIA).build());
                     } else {
                         v.vibrate(VibrationEffect.createOneShot(180, maxAmp));
                     }
