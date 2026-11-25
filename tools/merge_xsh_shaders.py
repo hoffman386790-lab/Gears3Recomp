@@ -47,7 +47,7 @@ def main():
         # { 0xHASHULL, dxilOff, dxilSz, spirvOff, spirvSz, lateOff, lateSz, airOff, airSz, specMask, "name", nullptr, texMask },
         nums = re.findall(r"0x[0-9a-fA-F]+|\d+", line.split('"')[0])
         m_name = re.search(r'"([^"]*)"', line)
-        after_name = line.split('"')[-1]
+        after_name = parts[-1]
         tex_m = re.findall(r"0x[0-9a-fA-F]+|\d+", after_name)
         h = int(nums[0], 0)
         sp_off = int(nums[3], 0)

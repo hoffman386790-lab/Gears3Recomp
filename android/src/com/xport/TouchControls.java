@@ -575,56 +575,35 @@ public class TouchControls extends View {
         return "LANCER".equals(b.label) || "GNASHER".equals(b.label) || "PISTOLA".equals(b.label) || "GRANADA".equals(b.label);
     }
     private void drawGearsWeaponIcon(Canvas canvas, Button b, float r, boolean pressed) {
-        long elapsed = android.os.SystemClock.uptimeMillis() - weaponNeonStart;
-        boolean neonActive = weaponNeonStart > 0 && elapsed >= 0 && elapsed < 380L;
-        float t = neonActive ? (1.0f - (elapsed / 380.0f)) : 0f;
-        float wr = r * (1.0f + 0.14f * (float) Math.sin(t * Math.PI));
         float cx = b.cx, cy = b.cy - r * 0.14f;
-        boolean isPrimary = "LANCER".equals(b.label) || "GNASHER".equals(b.label);
-        int neonOuter = isPrimary ? Color.rgb(255, 85, 0) : Color.rgb(0, 229, 255);
-        int neonCore  = isPrimary ? Color.rgb(255, 214, 102) : Color.rgb(186, 230, 253);
-        if (neonActive) {
-            neonPaint.setStyle(android.graphics.Paint.Style.STROKE);
-            neonPaint.setStrokeWidth((2.5f + 3.0f * t) * density);
-            neonPaint.setColor(Color.argb((int) (220 * t), Color.red(neonOuter), Color.green(neonOuter), Color.blue(neonOuter)));
-            float hw = r * 1.18f + (5f * density * (1f - t)), hh = r * 0.78f + (5f * density * (1f - t));
-            canvas.drawRoundRect(b.cx - hw, b.cy - hh, b.cx + hw, b.cy + hh, 9f * density, 9f * density, neonPaint);
-            postInvalidateOnAnimation();
-        }
+        int alpha = pressed ? 255 : 235;
         weaponPath.reset();
         if ("LANCER".equals(b.label)) {
-            weaponPath.moveTo(cx - wr * 0.85f, cy + wr * 0.12f); weaponPath.lineTo(cx - wr * 0.55f, cy - wr * 0.12f);
-            weaponPath.lineTo(cx + wr * 0.78f, cy - wr * 0.12f); weaponPath.lineTo(cx + wr * 0.78f, cy + wr * 0.02f);
-            weaponPath.lineTo(cx + wr * 0.58f, cy + wr * 0.02f); weaponPath.lineTo(cx + wr * 0.52f, cy + wr * 0.24f);
-            weaponPath.lineTo(cx - wr * 0.05f, cy + wr * 0.24f); weaponPath.lineTo(cx - wr * 0.12f, cy + wr * 0.08f);
-            weaponPath.lineTo(cx - wr * 0.32f, cy + wr * 0.26f); weaponPath.lineTo(cx - wr * 0.44f, cy + wr * 0.26f);
-            weaponPath.lineTo(cx - wr * 0.36f, cy + wr * 0.06f); weaponPath.lineTo(cx - wr * 0.85f, cy + wr * 0.22f);
+            weaponPath.moveTo(cx - r * 0.85f, cy + r * 0.12f); weaponPath.lineTo(cx - r * 0.55f, cy - r * 0.12f);
+            weaponPath.lineTo(cx + r * 0.78f, cy - r * 0.12f); weaponPath.lineTo(cx + r * 0.78f, cy + r * 0.02f);
+            weaponPath.lineTo(cx + r * 0.58f, cy + r * 0.02f); weaponPath.lineTo(cx + r * 0.52f, cy + r * 0.24f);
+            weaponPath.lineTo(cx - r * 0.05f, cy + r * 0.24f); weaponPath.lineTo(cx - r * 0.12f, cy + r * 0.08f);
+            weaponPath.lineTo(cx - r * 0.32f, cy + r * 0.26f); weaponPath.lineTo(cx - r * 0.44f, cy + r * 0.26f);
+            weaponPath.lineTo(cx - r * 0.36f, cy + r * 0.06f); weaponPath.lineTo(cx - r * 0.85f, cy + r * 0.22f);
             weaponPath.close();
         } else if ("GNASHER".equals(b.label)) {
-            weaponPath.moveTo(cx - wr * 0.78f, cy + wr * 0.18f); weaponPath.lineTo(cx - wr * 0.42f, cy - wr * 0.10f);
-            weaponPath.lineTo(cx + wr * 0.75f, cy - wr * 0.10f); weaponPath.lineTo(cx + wr * 0.75f, cy + wr * 0.04f);
-            weaponPath.lineTo(cx + wr * 0.22f, cy + wr * 0.04f); weaponPath.lineTo(cx + wr * 0.22f, cy + wr * 0.14f);
-            weaponPath.lineTo(cx - wr * 0.28f, cy + wr * 0.14f); weaponPath.lineTo(cx - wr * 0.65f, cy + wr * 0.28f);
+            weaponPath.moveTo(cx - r * 0.78f, cy + r * 0.18f); weaponPath.lineTo(cx - r * 0.42f, cy - r * 0.10f);
+            weaponPath.lineTo(cx + r * 0.75f, cy - r * 0.10f); weaponPath.lineTo(cx + r * 0.75f, cy + r * 0.04f);
+            weaponPath.lineTo(cx + r * 0.22f, cy + r * 0.04f); weaponPath.lineTo(cx + r * 0.22f, cy + r * 0.14f);
+            weaponPath.lineTo(cx - r * 0.28f, cy + r * 0.14f); weaponPath.lineTo(cx - r * 0.65f, cy + r * 0.28f);
             weaponPath.close();
         } else if ("PISTOLA".equals(b.label)) {
-            weaponPath.moveTo(cx - wr * 0.38f, cy + wr * 0.28f); weaponPath.lineTo(cx - wr * 0.26f, cy - wr * 0.14f);
-            weaponPath.lineTo(cx + wr * 0.45f, cy - wr * 0.14f); weaponPath.lineTo(cx + wr * 0.45f, cy + wr * 0.04f);
-            weaponPath.lineTo(cx - wr * 0.04f, cy + wr * 0.04f); weaponPath.lineTo(cx - wr * 0.14f, cy + wr * 0.28f);
+            weaponPath.moveTo(cx - r * 0.38f, cy + r * 0.28f); weaponPath.lineTo(cx - r * 0.26f, cy - r * 0.14f);
+            weaponPath.lineTo(cx + r * 0.45f, cy - r * 0.14f); weaponPath.lineTo(cx + r * 0.45f, cy + r * 0.04f);
+            weaponPath.lineTo(cx - r * 0.04f, cy + r * 0.04f); weaponPath.lineTo(cx - r * 0.14f, cy + r * 0.28f);
             weaponPath.close();
         } else {
-            weaponPath.addOval(cx - wr * 0.24f, cy - wr * 0.14f, cx + wr * 0.24f, cy + wr * 0.28f, android.graphics.Path.Direction.CW);
-            weaponPath.addRect(cx - wr * 0.10f, cy - wr * 0.26f, cx + wr * 0.10f, cy - wr * 0.14f, android.graphics.Path.Direction.CW);
+            weaponPath.addOval(cx - r * 0.24f, cy - r * 0.14f, cx + r * 0.24f, cy + r * 0.28f, android.graphics.Path.Direction.CW);
+            weaponPath.addRect(cx - r * 0.10f, cy - r * 0.26f, cx + r * 0.10f, cy - r * 0.14f, android.graphics.Path.Direction.CW);
         }
-        neonPaint.setStyle(android.graphics.Paint.Style.STROKE);
-        neonPaint.setStrokeWidth((neonActive ? 4.2f * t + 1.8f : 1.6f) * density);
-        neonPaint.setColor(Color.argb(neonActive ? (int) (180 + 75 * t) : 110, Color.red(neonOuter), Color.green(neonOuter), Color.blue(neonOuter)));
-        canvas.drawPath(weaponPath, neonPaint);
-        fill.setColor(neonActive ? neonCore : Color.argb(pressed ? 255 : 235, 244, 247, 250));
+        fill.setColor(Color.argb(alpha, 244, 247, 250));
         canvas.drawPath(weaponPath, fill);
-        neonPaint.setStrokeWidth(1.2f * density);
-        neonPaint.setColor(neonActive ? neonOuter : Color.argb(190, Color.red(neonCore), Color.green(neonCore), Color.blue(neonCore)));
-        canvas.drawPath(weaponPath, neonPaint);
-        text.setColor(neonActive ? neonCore : Color.argb(pressed ? 255 : 230, 244, 247, 250));
+        text.setColor(Color.argb(alpha, 244, 247, 250));
         text.setTextSize(7.5f * density * scale);
         canvas.drawText("▲ " + b.label + " ▼", b.cx, b.cy + r * 0.56f, text);
     }

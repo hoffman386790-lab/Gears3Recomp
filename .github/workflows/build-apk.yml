@@ -91,6 +91,16 @@ jobs:
           sed -i 's/windows-x86_64/linux-x86_64/g' tools/build-apk.sh
           sed -i 's/cmake -G Ninja/cmake -G Ninja -DCMAKE_MAKE_PROGRAM=ninja/g' tools/build-android.sh
 
+      - name: Merge 4,508 device shaders into stock shader_cache.cpp
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y zstd
+          mkdir -p /tmp/xsh_pack
+          gh release download shaders-pack -p "mis_shaders_4508.tar.gz" -D /tmp/xsh_pack
+          tar -xzf /tmp/xsh_pack/mis_shaders_4508.tar.gz -C /tmp/xsh_pack
+          python3 tools/merge_xsh_shaders.py
+
       - name: Build native Android libraries (POCO F6 Cortex-X4)
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
