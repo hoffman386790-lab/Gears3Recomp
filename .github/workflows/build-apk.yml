@@ -139,7 +139,6 @@ jobs:
           export USERPROFILE="$HOME"
           mkdir -p "$HOME/.android"
           echo "${{ secrets.FIXED_KEYSTORE_B64 }}" | base64 -d > "$HOME/.android/debug.keystore"
-            -dname "CN=Android Debug,O=Android,C=US"
           mkdir -p build/dxc && cp vendor_dxc/libdxcompiler.so build/dxc/libdxcompiler.so && ./tools/build-apk.sh
 
       - name: Upload Optimized Gears 3 APK
