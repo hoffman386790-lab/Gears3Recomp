@@ -52,8 +52,6 @@ public class MainActivity extends Activity {
     private void loadGameLibrary() {
         try {
             android.system.Os.setenv("TU_DEBUG", "nolrz", true);
-            android.system.Os.setenv("MESA_DISK_CACHE_SINGLE_FILE", "1", true);
-            android.system.Os.setenv("MESA_SHADER_CACHE_MAX_SIZE", "4G", true);
         } catch (Throwable ignored) {}
         System.loadLibrary("game");
             try { nativeInitRumble(); } catch (Throwable ignored) {}
