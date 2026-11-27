@@ -57,7 +57,7 @@ jobs:
             -Dplatforms=android \
             -Dplatform-sdk-version=34 \
             -Dandroid-stub=true \
-            -Dgallium-drivers= \
+            -Dgallium-drivers= -Degl=disabled -Dglx=disabled -Dopengl=false -Dgles1=disabled -Dgles2=disabled \
             -Dvulkan-drivers=freedreno \
             -Dfreedreno-kmds=kgsl \
             -Dshader-cache=enabled \
