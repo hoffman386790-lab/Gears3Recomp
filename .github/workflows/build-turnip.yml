@@ -51,7 +51,7 @@ jobs:
           meson setup build-android \
             --cross-file ../android-aarch64.txt \
             -Dbuildtype=release \
-            -Db_lto=true \
+            -Db_lto=false \
             -Dc_args="-O3 -march=armv8.2-a+dotprod" \
             -Dcpp_args="-O3 -march=armv8.2-a+dotprod" \
             -Dplatforms=android \
