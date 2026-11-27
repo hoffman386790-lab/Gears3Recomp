@@ -1,0 +1,90 @@
+name: Build Turnip Adreno 735
+on:
+  workflow_dispatch:
+    inputs:
+      mesa_branch:
+        description: 'Rama de Mesa'
+        required: true
+        default: 'main'
+jobs:
+  build-turnip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar herramientas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build python3-mako glslang-tools bison flex unzip zip wget curl ccache
+
+      - name: Descargar Android NDK
+        run: |
+          P="https://"; D="dl.google"; C=".com/android/repository"; NDK_BASE="https://${D}${C}"
+          wget -q "${NDK_BASE}/android-ndk-r27c-linux.zip"
+          unzip -q android-ndk-r27c-linux.zip
+          echo "NDK_PATH=$PWD/android-ndk-r27c" >> $GITHUB_ENV
+
+      - name: Clonar Mesa
+        run: |
+          P="https://"; MESA_REPO="${P}gitlab.freedesktop.org/mesa/mesa.git"
+          git clone --depth 1 --branch ${{ github.event.inputs.mesa_branch }} "$MESA_REPO" mesa
+
+      - name: Configurar Cross-File para POCO F6
+        run: |
+          cat << 'CROSS' > android-aarch64.txt
+          [binaries]
+          ar = '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+          c = ['ccache', '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang']
+          cpp = ['ccache', '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang++', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '--start-no-unused-arguments', '-static-libstdc++', '--end-no-unused-arguments']
+          c_ld = 'lld'
+          cpp_ld = 'lld'
+          strip = '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-strip'
+
+          [host_machine]
+          system = 'android'
+          cpu_family = 'aarch64'
+          cpu = 'armv8.2-a'
+          endian = 'little'
+          CROSS
+
+      - name: Compilar Turnip optimizado
+        run: |
+          cd mesa
+          meson setup build-android \
+            --cross-file ../android-aarch64.txt \
+            -Dbuildtype=release \
+            -Db_lto=true \
+            -Dc_args="-O3 -march=armv8.2-a+dotprod" \
+            -Dcpp_args="-O3 -march=armv8.2-a+dotprod" \
+            -Dplatforms=android \
+            -Dplatform-sdk-version=34 \
+            -Dandroid-stub=true \
+            -Dgallium-drivers= \
+            -Dvulkan-drivers=freedreno \
+            -Dfreedreno-kmds=kgsl \
+            -Dshader-cache=enabled \
+            -Dshader-cache-default=true
+          ninja -C build-android -j$(nproc)
+
+      - name: Empaquetar ZIP para Adrenotools
+        run: |
+          mkdir -p turnip_pkg
+          cp mesa/build-android/src/freedreno/vulkan/libvulkan_freedreno.so turnip_pkg/vulkan.ad0735.so
+          cat << 'META' > turnip_pkg/meta.json
+          {
+            "schemaVersion": 1,
+            "name": "Turnip-POCO-F6-FastShader",
+            "description": "Turnip optimizado para Adreno 735 con LTO y cache de shaders",
+            "author": "hoffman386790-lab",
+            "packageVersion": "1",
+            "vendor": "Mesa",
+            "driverVersion": "25.x-Custom",
+            "minApi": 30,
+            "libraryName": "vulkan.ad0735.so"
+          }
+          META
+          cd turnip_pkg && zip -r ../Turnip-POCO-F6-FastShader.zip .
+
+      - name: Subir artefacto compilado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Turnip-POCO-F6-FastShader
+          path: Turnip-POCO-F6-FastShader.zip
