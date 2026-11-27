@@ -31,12 +31,12 @@ jobs:
         run: |
           cat << 'CROSS' > android-aarch64.txt
           [binaries]
-          ar = '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-          c = ['ccache', '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang']
-          cpp = ['ccache', '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang++', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '--start-no-unused-arguments', '-static-libstdc++', '--end-no-unused-arguments']
+          ar = '/home/runner/work/Gears3Recomp/Gears3Recomp/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+          c = ['ccache', '/home/runner/work/Gears3Recomp/Gears3Recomp/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang']
+          cpp = ['ccache', '/home/runner/work/Gears3Recomp/Gears3Recomp/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android34-clang++', '-fno-exceptions', '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '--start-no-unused-arguments', '-static-libstdc++', '--end-no-unused-arguments']
           c_ld = 'lld'
           cpp_ld = 'lld'
-          strip = '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-strip'
+          strip = '/home/runner/work/Gears3Recomp/Gears3Recomp/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-strip'
 
           [host_machine]
           system = 'android'
