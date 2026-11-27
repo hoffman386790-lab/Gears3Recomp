@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Instalar herramientas
         run: |
-          sudo apt-get update
+          sudo rm -f /etc/apt/sources.list.d/microsoft* && sudo apt-get update
           sudo apt-get install -y meson ninja-build python3-mako glslang-tools bison flex unzip zip wget curl ccache
 
       - name: Descargar Android NDK
