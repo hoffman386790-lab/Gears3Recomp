@@ -30,8 +30,7 @@ jobs:
           P="https://"; MESA_REPO="${P}gitlab.freedesktop.org/mesa/mesa.git"
           git clone --depth 1 --branch ${{ github.event.inputs.mesa_branch || 'main' }} "$MESA_REPO" mesa
           cd mesa
-          sed -i "s/VK_FORMAT_R8G8B8A8_UNORM,/VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM,/g" src/vulkan/wsi/wsi_common_android.c
-          sed -i "s/VK_FORMAT_R8G8B8A8_SRGB,/VK_FORMAT_R8G8B8A8_SRGB, VK_FORMAT_B8G8R8A8_SRGB,/g" src/vulkan/wsi/wsi_common_android.c
+          find src -name "*wsi*android*" -exec sed -i "s/VK_FORMAT_R8G8B8A8_UNORM,/VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM,/g; s/VK_FORMAT_R8G8B8A8_SRGB,/VK_FORMAT_R8G8B8A8_SRGB, VK_FORMAT_B8G8R8A8_SRGB,/g" {} + || true
 
       - name: Configurar Cross-File para POCO F6
         run: |
