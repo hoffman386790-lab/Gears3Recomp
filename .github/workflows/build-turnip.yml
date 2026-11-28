@@ -61,9 +61,9 @@ PATCH
           meson setup build-android \
             --cross-file ../android-aarch64.txt \
             -Dbuildtype=release \
-            -Db_lto=false \
-            -Dc_args="-O3 -march=armv8.2-a+dotprod" \
-            -Dcpp_args="-O3 -march=armv8.2-a+dotprod" \
+            -Db_lto=true -Db_ndebug=true \
+            -Dc_args="-O3 -march=armv8.6-a+dotprod+fp16 -mtune=cortex-x4" \
+            -Dcpp_args="-O3 -march=armv8.6-a+dotprod+fp16 -mtune=cortex-x4" \
             -Dplatforms=android \
             -Dplatform-sdk-version=34 \
             -Dandroid-stub=true \
