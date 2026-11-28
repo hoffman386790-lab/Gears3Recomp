@@ -1238,12 +1238,12 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams gearLp = new FrameLayout.LayoutParams((int)(36 * d), (int)(36 * d));
         gearLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         gearLp.topMargin = (int)(10 * d);
-        gearBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(true; } }));
+        gearBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(true); } });
 
         quickBackdrop = new FrameLayout(this);
         quickBackdrop.setBackgroundColor(0x880B0D11);
         quickBackdrop.setVisibility(View.GONE);
-        quickBackdrop.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(false; } }));
+        quickBackdrop.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(false); } });
 
         quickCard = new LinearLayout(this);
         quickCard.setOrientation(LinearLayout.VERTICAL);
@@ -1268,7 +1268,7 @@ public class MainActivity extends Activity {
         closeBtn.setTextSize(15f);
         closeBtn.setGravity(Gravity.CENTER);
         closeBtn.setBackground(makePill(0x22FFFFFF, 0, 14));
-        closeBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(false; } }));
+        closeBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(false); } });
         header.addView(title, titleLp);
         header.addView(closeBtn, new LinearLayout.LayoutParams((int)(28 * d), (int)(28 * d)));
         quickCard.addView(header);
