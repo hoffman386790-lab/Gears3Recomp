@@ -132,6 +132,14 @@ jobs:
           export PATH="$ANDROID_HOME/cmake/3.31.6/bin:$PATH"
           ./tools/build-android.sh xport xportapp
 
+      - name: Cache compiled DXC and host tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/dxc/libdxcompiler.so
+            bin/
+          key: ${{ runner.os }}-dxc-v1.8.2407-${{ hashFiles('tools/build_dxc.sh') }}
+
       - name: Build libdxcompiler.so
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
