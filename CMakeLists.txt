@@ -54,6 +54,8 @@ elseif (ANDROID)
     # cas* helper that tests for LSE at run time. Tuned for the A715. Floating-point semantics are
     # the same either way.
     add_compile_options(-O3 -march=armv9-a+simd+fp16+dotprod+i8mm+bf16 -mcpu=cortex-x4 -mno-outline-atomics -fomit-frame-pointer -funroll-loops)
+    add_compile_options(-flto=thin)
+    add_link_options(-flto=thin -Wl,--thinlto-cache-dir=${CMAKE_BINARY_DIR}/thinlto_cache)
 endif()
 
 # Recompiled game code (XenonRecomp output). Regenerate with tools/recompile.bat.

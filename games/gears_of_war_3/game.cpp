@@ -229,7 +229,7 @@ namespace game
         (void)startAddress;
         (void)startContext;
         (void)entry;
-        return nullptr;
+        return "worker";
     }
 
     void AfterImageLoad()

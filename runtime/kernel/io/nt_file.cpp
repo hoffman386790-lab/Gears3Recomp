@@ -171,6 +171,7 @@ namespace
     {
         std::filesystem::path path;
         std::fstream stream;
+    std::vector<char> ioBuf;
         bool isDirectory = false;
         uint64_t position = 0;
         // One read or write at a time: each is a seek and then a transfer on the same stream, and
@@ -464,6 +465,10 @@ uint32_t NtCreateFile(be<uint32_t>* fileHandle, uint32_t desiredAccess, XOBJECT_
             std::filesystem::create_directories(path.parent_path(), ec);
             std::ofstream(path, std::ios::binary | std::ios::trunc);
             information = !exists ? FILE_CREATED : (disposition == FILE_SUPERSEDE ? FILE_SUPERSEDED : FILE_OVERWRITTEN);
+        }
+        if (!write) {
+            file->ioBuf.resize(2 * 1024 * 1024);
+            file->stream.rdbuf()->pubsetbuf(file->ioBuf.data(), file->ioBuf.size());
         }
         file->stream.open(path, std::ios::binary | std::ios::in | (write ? std::ios::out : std::ios::openmode{}));
         if (!file->stream.is_open())
