@@ -137,7 +137,7 @@ jobs:
         ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
       run: |
         mkdir -p build/dxc/dl build/dxc/src/external/DirectX-Headers build/dxc/src/external/SPIRV-Headers build/dxc/src/external/SPIRV-Tools
-        G="https://github.com"
+        G="https://codeload.github.com"
         curl -sL "$G/microsoft/DirectXShaderCompiler/tar.gz/refs/tags/v1.8.2407" | tar -xz -C build/dxc/src --strip-components=1
         curl -sL "$G/microsoft/DirectX-Headers/tar.gz/980971e835876dc0cde415e8f9bc646e64667bf7" | tar -xz -C build/dxc/src/external/DirectX-Headers --strip-components=1
         curl -sL "$G/KhronosGroup/SPIRV-Headers/tar.gz/2acb319af38d43be3ea76bfabf3998e5281d8d12" | tar -xz -C build/dxc/src/external/SPIRV-Headers --strip-components=1
