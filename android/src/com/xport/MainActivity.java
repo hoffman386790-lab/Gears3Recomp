@@ -1218,10 +1218,7 @@ public class MainActivity extends Activity {
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
             }
             quickCard.animate().scaleX(0.93f).scaleY(0.93f).setDuration(180).start();
-            quickBackdrop.animate().alpha(0f).setDuration(180).withEndAction(() -> {
-                quickBackdrop.setVisibility(View.GONE);
-                hideSystemBars();
-            }).start();
+            quickBackdrop.animate().alpha(0f).setDuration(180).withEndAction(new Runnable() { public void run() { quickBackdrop.setVisibility(View.GONE); hideSystemBars(); } }).start();
         }
     }
 
