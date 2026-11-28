@@ -133,11 +133,11 @@ jobs:
           ./tools/build-android.sh xport xportapp
 
       - name: Build libdxcompiler.so
-      env:
-        ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
-      run: bash tools/build_dxc.sh
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: bash tools/build_dxc.sh
 
-    - name: Package and sign APK
+      - name: Package and sign APK
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: |
