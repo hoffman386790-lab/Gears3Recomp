@@ -134,7 +134,7 @@ namespace
     char g_workerMode = 'A'; // worker_mode test switch (ReadWorkerMode), under g_mutex
     char g_recorderMode = 'A'; // recorder_mode test switch (ReadRecorderMode), under g_mutex
     // layout_mode test switch (ReadLayoutMode), written under g_mutex; the placement thread reads it.
-    std::atomic<char> g_layoutMode{'A'};
+    std::atomic<char> g_layoutMode{'D'};
     std::atomic<int> g_recorderTid{0}; // xport_thread_policy_set_recorder; 0 until the renderer starts
 
     // tid: the thread's, so that only the recorder itself among the threads named XpRecorder is
@@ -474,7 +474,7 @@ namespace
             const char* save = getenv("XPORT_SAVE_DIR");
             return std::string(save ? save : ".") + "/../affinity_mode";
         }();
-        char mode = 'A';
+        char mode = 'D';
         if (FILE* file = fopen(path.c_str(), "r"))
         {
             const int c = fgetc(file);
@@ -534,7 +534,7 @@ namespace
             const char* save = getenv("XPORT_SAVE_DIR");
             return std::string(save ? save : ".") + "/../worker_mode";
         }();
-        char mode = 'A';
+        char mode = 'D';
         if (FILE* file = fopen(path.c_str(), "r"))
         {
             if (fgetc(file) == 'B')
@@ -555,7 +555,7 @@ namespace
             const char* save = getenv("XPORT_SAVE_DIR");
             return std::string(save ? save : ".") + "/../recorder_mode";
         }();
-        char mode = 'A';
+        char mode = 'D';
         if (FILE* file = fopen(path.c_str(), "r"))
         {
             if (fgetc(file) == 'B')
@@ -581,7 +581,7 @@ namespace
             const char* save = getenv("XPORT_SAVE_DIR");
             return std::string(save ? save : ".") + "/../layout_mode";
         }();
-        char mode = 'A';
+        char mode = 'D';
         if (FILE* file = fopen(path.c_str(), "r"))
         {
             const int c = fgetc(file);

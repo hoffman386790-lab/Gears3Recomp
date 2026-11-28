@@ -707,6 +707,9 @@ uint32_t XamInputSetState(uint32_t userIndex, uint32_t flags, XAMINPUT_VIBRATION
     if (vibration != nullptr && g_rumbleVm != nullptr && g_mainActivityCls != nullptr && g_rumbleMid != nullptr) {
         uint16_t left = ByteSwap(vibration->wLeftMotorSpeed);
         uint16_t right = ByteSwap(vibration->wRightMotorSpeed);
+        static uint16_t s_lastLeft = 0xFFFF, s_lastRight = 0xFFFF;
+        if (left == s_lastLeft && right == s_lastRight) return ERROR_SUCCESS;
+        s_lastLeft = left; s_lastRight = right;
         JNIEnv* env = nullptr;
         bool attached = false;
         if (g_rumbleVm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_EDETACHED) {
