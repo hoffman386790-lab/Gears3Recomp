@@ -1172,8 +1172,8 @@ public class MainActivity extends Activity {
 
     private FrameLayout quickBackdrop;
     private LinearLayout quickCard;
-    private String curFps = "60";
-    private String curQual = "rendimiento";
+    private String curFps = "30";
+    private String curQual = "nativa";
     private boolean curPaceB = true;
     private boolean curTherm = true;
 
@@ -1238,12 +1238,12 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams gearLp = new FrameLayout.LayoutParams((int)(36 * d), (int)(36 * d));
         gearLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         gearLp.topMargin = (int)(10 * d);
-        gearBtn.setOnClickListener(v -> toggleQuickMenu(true));
+        gearBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(true; } }));
 
         quickBackdrop = new FrameLayout(this);
         quickBackdrop.setBackgroundColor(0x880B0D11);
         quickBackdrop.setVisibility(View.GONE);
-        quickBackdrop.setOnClickListener(v -> toggleQuickMenu(false));
+        quickBackdrop.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(false; } }));
 
         quickCard = new LinearLayout(this);
         quickCard.setOrientation(LinearLayout.VERTICAL);
@@ -1268,7 +1268,7 @@ public class MainActivity extends Activity {
         closeBtn.setTextSize(15f);
         closeBtn.setGravity(Gravity.CENTER);
         closeBtn.setBackground(makePill(0x22FFFFFF, 0, 14));
-        closeBtn.setOnClickListener(v -> toggleQuickMenu(false));
+        closeBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { toggleQuickMenu(false; } }));
         header.addView(title, titleLp);
         header.addView(closeBtn, new LinearLayout.LayoutParams((int)(28 * d), (int)(28 * d)));
         quickCard.addView(header);
@@ -1295,11 +1295,11 @@ public class MainActivity extends Activity {
             styleChip(chip, fpsVals[i].equals(curFps));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, FrameLayout.LayoutParams.WRAP_CONTENT, 1f);
             if (i > 0) lp.leftMargin = (int)(6 * d);
-            chip.setOnClickListener(v -> {
+            chip.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { {
                 curFps = fpsVals[idx];
                 writeLiveFlag("frame_limit", curFps);
                 for (int j = 0; j < 4; j++) styleChip(fpsChips[j], j == idx);
-            });
+            }; } });
             fpsChips[i] = chip;
             rowFps.addView(chip, lp);
         }
@@ -1327,11 +1327,11 @@ public class MainActivity extends Activity {
             styleChip(chip, qVals[i].equals(curQual));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, FrameLayout.LayoutParams.WRAP_CONTENT, 1f);
             if (i > 0) lp.leftMargin = (int)(6 * d);
-            chip.setOnClickListener(v -> {
+            chip.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { {
                 curQual = qVals[idx];
                 writeLiveFlag("quality", curQual);
                 for (int j = 0; j < 4; j++) styleChip(qChips[j], j == idx);
-            });
+            }; } });
             qChips[i] = chip;
             rowQual.addView(chip, lp);
         }
@@ -1343,10 +1343,10 @@ public class MainActivity extends Activity {
         swPace.setTextSize(13f);
         swPace.setChecked(curPaceB);
         swPace.setPadding(0, pad, 0, (int)(4 * d));
-        swPace.setOnCheckedChangeListener((b, isChecked) -> {
+        swPace.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() { public void onCheckedChanged(android.widget.CompoundButton b, boolean isChecked) {
             curPaceB = isChecked;
             writeLiveFlag("pacing_mode", isChecked ? "B" : "A");
-        });
+        } });
         quickCard.addView(swPace);
 
         Switch swTherm = new Switch(this);
@@ -1355,10 +1355,10 @@ public class MainActivity extends Activity {
         swTherm.setTextSize(13f);
         swTherm.setChecked(curTherm);
         swTherm.setPadding(0, (int)(6 * d), 0, 0);
-        swTherm.setOnCheckedChangeListener((b, isChecked) -> {
+        swTherm.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() { public void onCheckedChanged(android.widget.CompoundButton b, boolean isChecked) {
             curTherm = isChecked;
             writeLiveFlag("thermal_ceiling", isChecked ? "1" : "0");
-        });
+        } });
         quickCard.addView(swTherm);
 
         quickBackdrop.addView(quickCard, cardLp);
