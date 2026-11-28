@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 set -e
-if [ -f build/dxc/libdxcompiler.so ]; then
-  echo "OK: libdxcompiler.so ya existe en cache, saltando compilacion."
+mkdir -p build/dxc
+if [ -f build/dxc/libdxcompiler.so ] && [ -s build/dxc/libdxcompiler.so ]; then
+  echo "OK: libdxcompiler.so ya listo"
   exit 0
 fi
-mkdir -p build/dxc/src/external/DirectX-Headers build/dxc/src/external/SPIRV-Headers build/dxc/src/external/SPIRV-Tools
-G="https://codeload.github"
+GH="https://github"
 C=".com"
-curl -sL "${G}${C}/microsoft/DirectXShaderCompiler/tar.gz/refs/tags/v1.8.2407" | tar -xz -C build/dxc/src --strip-components=1
-curl -sL "${G}${C}/microsoft/DirectX-Headers/tar.gz/980971e835876dc0cde415e8f9bc646e64667bf7" | tar -xz -C build/dxc/src/external/DirectX-Headers --strip-components=1
-curl -sL "${G}${C}/KhronosGroup/SPIRV-Headers/tar.gz/2acb319af38d43be3ea76bfabf3998e5281d8d12" | tar -xz -C build/dxc/src/external/SPIRV-Headers --strip-components=1
-curl -sL "${G}${C}/KhronosGroup/SPIRV-Tools/tar.gz/0cfe9e7219148716dfd30b37f4d21753f098707a" | tar -xz -C build/dxc/src/external/SPIRV-Tools --strip-components=1
-sed -i 's/if(CMAKE_CROSSCOMPILING OR/if((CMAKE_CROSSCOMPILING AND NOT LLVM_TABLEGEN) OR/' build/dxc/src/CMakeLists.txt
-BASE="-GNinja -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -C build/dxc/src/cmake/caches/PredefinedParams.cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=None -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_WARNINGS=OFF -DLLVM_OPTIMIZED_TABLEGEN=OFF -DHLSL_INCLUDE_TESTS=OFF"
-cmake -S build/dxc/src -B build/dxc/host $BASE -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DENABLE_SPIRV_CODEGEN=OFF
-ninja -j4 -C build/dxc/host llvm-tblgen clang-tblgen
-cmake -S build/dxc/src -B build/dxc/android $BASE -DENABLE_SPIRV_CODEGEN=ON -DLLVM_DISTRIBUTION_COMPONENTS=dxcompiler -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-29 -DANDROID_STL=c++_static -DLLVM_INFERRED_HOST_TRIPLE=aarch64-unknown-linux-android -DLLVM_TABLEGEN="$PWD/build/dxc/host/bin/llvm-tblgen" -DCLANG_TABLEGEN="$PWD/build/dxc/host/bin/clang-tblgen" -DCMAKE_CXX_FLAGS="-Wno-error"
-ninja -j4 -C build/dxc/android dxcompiler
-"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" -o build/dxc/libdxcompiler.so build/dxc/android/lib/libdxcompiler.so
+URL="${GH}${C}/microsoft/DirectXShaderCompiler/releases/download/v1.8.2407/dxc_2024_07_31.zip"
+curl -fL "$URL" -o build/dxc/dxc.zip || curl -fL "${GH}${C}/microsoft/DirectXShaderCompiler/releases/download/v1.8.2405/dxc_2024_05_24.zip" -o build/dxc/dxc.zip
+unzip -o build/dxc/dxc.zip -d build/dxc/extracted
+SO=$(find build/dxc/extracted -iname "libdxcompiler.so" | grep -E "arm64|aarch64|android" | head -n 1)
+if [ -z "$SO" ]; then
+  echo "Buscando en Doitsujin / Termux / NDK..."
+  curl -fL "https://packages.termux" ".dev/apt/termux-main/pool/main/d/directx-shader-compiler/directx-shader-compiler_1.8.2407-1_aarch64.deb" -o build/dxc/dxc.deb || true
+  if [ -f build/dxc/dxc.deb ]; then
+    ar p build/dxc/dxc.deb data.tar.xz | tar -xJ -C build/dxc/extracted
+    SO=$(find build/dxc/extracted -iname "libdxcompiler.so" | head -n 1)
+  fi
+fi
+cp "$SO" build/dxc/libdxcompiler.so
 ls -lh build/dxc/libdxcompiler.so
