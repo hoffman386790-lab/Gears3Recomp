@@ -272,6 +272,15 @@ void PresentationSwitchThread(std::string directory) {
                        {"batch_detile", "xnative_batched_detile_barrier"},
                        {"early_tests", "xnative_early_fragment_tests"},
                        {"quality", "xport_resolution_quality"}};
+  rex::cvar::SetFlagByName("xnative_async_pipelines", "true");
+  rex::cvar::SetFlagByName("xnative_async_pipeline_frame_wait_us", "0");
+  rex::cvar::SetFlagByName("xport_resolution_quality", "rendimiento");
+  rex::cvar::SetFlagByName("vulkan_pacer_refresh_lock", "false");
+  rex::cvar::SetFlagByName("xnative_store_op_none", "true");
+  rex::cvar::SetFlagByName("xnative_batch_attachment_barriers", "true");
+  rex::cvar::SetFlagByName("xnative_batched_detile_barrier", "true");
+  rex::cvar::SetFlagByName("xnative_early_fragment_tests", "true");
+  rex::cvar::SetFlagByName("xport_thermal_ceiling", "true");
   for (Switch& item : switches) {
     item.configured = item.applied = rex::cvar::GetFlagByName(item.cvar);
   }

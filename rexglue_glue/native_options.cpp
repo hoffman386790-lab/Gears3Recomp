@@ -26,7 +26,7 @@
 // xport, Android: 30 FPS (2 refreshes of the 60 Hz panel), held by the dynamic draw distance
 // below. Below the cap frames reach the panel after 2, 3 or 4 refreshes and driving judders; 20
 // (files/frame_limit) keeps every frame at 3 refreshes when 30 is out of reach.
-REXCVAR_DEFINE_UINT32(xport_frame_limit, REX_PLATFORM_ANDROID ? 30 : 60, "Xcompiler/Graphics/Display",
+REXCVAR_DEFINE_UINT32(xport_frame_limit, 60, "Xcompiler/Graphics/Display",
                       "Maximum game and host presentation rate: 0 is unlocked; caps are 20, 30, 40, "
                       "60, and 120 FPS")
     .allowed({"0", "20", "30", "40", "60", "120"});
@@ -52,7 +52,7 @@ REXCVAR_DEFINE_DOUBLE(xnative_auto_hdr_shoulder_power, 2.5,
                       "Auto HDR highlight shoulder exponent")
     .range(1.0, 10.0);
 
-REXCVAR_DEFINE_STRING(xnative_anti_aliasing, REX_PLATFORM_ANDROID ? "fxaa" : "smaa",
+REXCVAR_DEFINE_STRING(xnative_anti_aliasing, REX_PLATFORM_ANDROID ? "none" : "smaa",
                       "Xcompiler/Graphics/Anti-Aliasing",
                       "Anti-aliasing: off, fxaa, smaa, deferred MSAA, or even-factor SSAA")
     // `spatial` remains loadable as a deprecated compatibility alias. It is
