@@ -27,6 +27,15 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
+import android.graphics.drawable.GradientDrawable;
+import android.view.Gravity;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.LinearLayout;
+import android.widget.Switch;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 
 import java.io.File;
 import java.io.IOException;
@@ -248,6 +257,7 @@ public class MainActivity extends Activity {
         } else {
             showLauncher();
         }
+        setupQuickSettingsOverlay();
     }
 
     // ---------- the launcher ----------
@@ -1159,4 +1169,202 @@ public class MainActivity extends Activity {
         }
         super.onDestroy();
     }
+
+    private FrameLayout quickBackdrop;
+    private LinearLayout quickCard;
+    private String curFps = "60";
+    private String curQual = "rendimiento";
+    private boolean curPaceB = true;
+    private boolean curTherm = true;
+
+    private void writeLiveFlag(String name, String val) {
+        try (FileOutputStream fos = new FileOutputStream(new File(getFilesDir(), name))) {
+            fos.write(val.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignored) {}
+    }
+
+    private GradientDrawable makePill(int fillColor, int strokeColor, float radiusDp) {
+        float d = getResources().getDisplayMetrics().density;
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(fillColor);
+        gd.setCornerRadius(radiusDp * d);
+        if (strokeColor != 0) gd.setStroke((int)(1.2f * d), strokeColor);
+        return gd;
+    }
+
+    private void styleChip(TextView tv, boolean active) {
+        tv.setBackground(makePill(active ? 0xFFE59A24 : 0x26FFFFFF, active ? 0xFFFFC15E : 0x33FFFFFF, 10));
+        tv.setTextColor(active ? 0xFF121418 : 0xFFEAECEF);
+    }
+
+    private void toggleQuickMenu(boolean show) {
+        if (quickBackdrop == null || quickCard == null) return;
+        if (show) {
+            quickBackdrop.setVisibility(View.VISIBLE);
+            quickBackdrop.setAlpha(0f);
+            quickCard.setScaleX(0.93f);
+            quickCard.setScaleY(0.93f);
+            if (Build.VERSION.SDK_INT >= 31) {
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+                getWindow().getAttributes().setBlurBehindRadius(28);
+                getWindow().setAttributes(getWindow().getAttributes());
+            }
+            quickBackdrop.animate().alpha(1f).setDuration(220).setInterpolator(new DecelerateInterpolator()).start();
+            quickCard.animate().scaleX(1f).scaleY(1f).setDuration(220).setInterpolator(new DecelerateInterpolator()).start();
+        } else {
+            if (Build.VERSION.SDK_INT >= 31) {
+                getWindow().getAttributes().setBlurBehindRadius(0);
+                getWindow().setAttributes(getWindow().getAttributes());
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+            }
+            quickCard.animate().scaleX(0.93f).scaleY(0.93f).setDuration(180).start();
+            quickBackdrop.animate().alpha(0f).setDuration(180).withEndAction(() -> {
+                quickBackdrop.setVisibility(View.GONE);
+                hideSystemBars();
+            }).start();
+        }
+    }
+
+    private void setupQuickSettingsOverlay() {
+        float d = getResources().getDisplayMetrics().density;
+        int pad = (int)(12 * d);
+
+        TextView gearBtn = new TextView(this);
+        gearBtn.setText("⚙");
+        gearBtn.setTextSize(15f);
+        gearBtn.setTextColor(0xDDEAECEF);
+        gearBtn.setGravity(Gravity.CENTER);
+        gearBtn.setBackground(makePill(0x5514161C, 0x44FFFFFF, 18));
+        FrameLayout.LayoutParams gearLp = new FrameLayout.LayoutParams((int)(36 * d), (int)(36 * d));
+        gearLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        gearLp.topMargin = (int)(10 * d);
+        gearBtn.setOnClickListener(v -> toggleQuickMenu(true));
+
+        quickBackdrop = new FrameLayout(this);
+        quickBackdrop.setBackgroundColor(0x880B0D11);
+        quickBackdrop.setVisibility(View.GONE);
+        quickBackdrop.setOnClickListener(v -> toggleQuickMenu(false));
+
+        quickCard = new LinearLayout(this);
+        quickCard.setOrientation(LinearLayout.VERTICAL);
+        quickCard.setPadding((int)(18 * d), (int)(16 * d), (int)(18 * d), (int)(16 * d));
+        quickCard.setBackground(makePill(0xDD181B22, 0x44FFFFFF, 20));
+        quickCard.setClickable(true);
+        FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams((int)(340 * d), FrameLayout.LayoutParams.WRAP_CONTENT);
+        cardLp.gravity = Gravity.CENTER;
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView title = new TextView(this);
+        title.setText("⚡ Ajustes en Vivo");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(16f);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, FrameLayout.LayoutParams.WRAP_CONTENT, 1f);
+        TextView closeBtn = new TextView(this);
+        closeBtn.setText("✕");
+        closeBtn.setTextColor(0xFFCCCCCC);
+        closeBtn.setTextSize(15f);
+        closeBtn.setGravity(Gravity.CENTER);
+        closeBtn.setBackground(makePill(0x22FFFFFF, 0, 14));
+        closeBtn.setOnClickListener(v -> toggleQuickMenu(false));
+        header.addView(title, titleLp);
+        header.addView(closeBtn, new LinearLayout.LayoutParams((int)(28 * d), (int)(28 * d)));
+        quickCard.addView(header);
+
+        TextView lblFps = new TextView(this);
+        lblFps.setText("Límite de FPS");
+        lblFps.setTextColor(0xFFAAB2C0);
+        lblFps.setTextSize(12f);
+        lblFps.setPadding(0, pad, 0, (int)(6 * d));
+        quickCard.addView(lblFps);
+
+        LinearLayout rowFps = new LinearLayout(this);
+        String[] fpsLabels = {"30", "40", "60", "Libre"};
+        String[] fpsVals = {"30", "40", "60", "0"};
+        TextView[] fpsChips = new TextView[4];
+        for (int i = 0; i < 4; i++) {
+            final int idx = i;
+            TextView chip = new TextView(this);
+            chip.setText(fpsLabels[i]);
+            chip.setTextSize(12f);
+            chip.setTypeface(Typeface.DEFAULT_BOLD);
+            chip.setGravity(Gravity.CENTER);
+            chip.setPadding(0, (int)(8 * d), 0, (int)(8 * d));
+            styleChip(chip, fpsVals[i].equals(curFps));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, FrameLayout.LayoutParams.WRAP_CONTENT, 1f);
+            if (i > 0) lp.leftMargin = (int)(6 * d);
+            chip.setOnClickListener(v -> {
+                curFps = fpsVals[idx];
+                writeLiveFlag("frame_limit", curFps);
+                for (int j = 0; j < 4; j++) styleChip(fpsChips[j], j == idx);
+            });
+            fpsChips[i] = chip;
+            rowFps.addView(chip, lp);
+        }
+        quickCard.addView(rowFps);
+
+        TextView lblQual = new TextView(this);
+        lblQual.setText("Calidad Gráfica");
+        lblQual.setTextColor(0xFFAAB2C0);
+        lblQual.setTextSize(12f);
+        lblQual.setPadding(0, pad, 0, (int)(6 * d));
+        quickCard.addView(lblQual);
+
+        LinearLayout rowQual = new LinearLayout(this);
+        String[] qLabels = {"Rend.", "Equil.", "Alta", "Nativa"};
+        String[] qVals = {"rendimiento", "equilibrada", "alta", "nativa"};
+        TextView[] qChips = new TextView[4];
+        for (int i = 0; i < 4; i++) {
+            final int idx = i;
+            TextView chip = new TextView(this);
+            chip.setText(qLabels[i]);
+            chip.setTextSize(12f);
+            chip.setTypeface(Typeface.DEFAULT_BOLD);
+            chip.setGravity(Gravity.CENTER);
+            chip.setPadding(0, (int)(8 * d), 0, (int)(8 * d));
+            styleChip(chip, qVals[i].equals(curQual));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, FrameLayout.LayoutParams.WRAP_CONTENT, 1f);
+            if (i > 0) lp.leftMargin = (int)(6 * d);
+            chip.setOnClickListener(v -> {
+                curQual = qVals[idx];
+                writeLiveFlag("quality", curQual);
+                for (int j = 0; j < 4; j++) styleChip(qChips[j], j == idx);
+            });
+            qChips[i] = chip;
+            rowQual.addView(chip, lp);
+        }
+        quickCard.addView(rowQual);
+
+        Switch swPace = new Switch(this);
+        swPace.setText("Sincronización Baja Latencia (Modo B)");
+        swPace.setTextColor(0xFFEAECEF);
+        swPace.setTextSize(13f);
+        swPace.setChecked(curPaceB);
+        swPace.setPadding(0, pad, 0, (int)(4 * d));
+        swPace.setOnCheckedChangeListener((b, isChecked) -> {
+            curPaceB = isChecked;
+            writeLiveFlag("pacing_mode", isChecked ? "B" : "A");
+        });
+        quickCard.addView(swPace);
+
+        Switch swTherm = new Switch(this);
+        swTherm.setText("Control Térmico Automático");
+        swTherm.setTextColor(0xFFEAECEF);
+        swTherm.setTextSize(13f);
+        swTherm.setChecked(curTherm);
+        swTherm.setPadding(0, (int)(6 * d), 0, 0);
+        swTherm.setOnCheckedChangeListener((b, isChecked) -> {
+            curTherm = isChecked;
+            writeLiveFlag("thermal_ceiling", isChecked ? "1" : "0");
+        });
+        quickCard.addView(swTherm);
+
+        quickBackdrop.addView(quickCard, cardLp);
+        root.addView(gearBtn, gearLp);
+        root.addView(quickBackdrop, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+    }
+
 }
