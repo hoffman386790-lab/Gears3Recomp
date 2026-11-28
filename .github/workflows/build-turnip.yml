@@ -1,5 +1,8 @@
 name: Build Turnip Adreno 735
 on:
+  push:
+    paths:
+      - '.github/workflows/build-turnip.yml'
   workflow_dispatch:
     inputs:
       mesa_branch:
